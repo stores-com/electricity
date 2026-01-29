@@ -29,7 +29,7 @@
     ],
     "main": "./lib",
     "name": "electricity",
-    "repository": "https://github.com/mediocre/electricity",
+    "repository": "https://github.com/stores-com/electricity",
     "scripts": {
         "coveralls": "nyc npm test && nyc report --reporter=text-lcov | coveralls",
         "test": "mocha --exit -R spec"
