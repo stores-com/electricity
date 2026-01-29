@@ -34,5 +34,5 @@
         "coveralls": "nyc npm test && nyc report --reporter=text-lcov | coveralls",
         "test": "mocha --exit -R spec"
     },
-    "version": "3.6.1"
+    "version": "3.6.2"
 }
