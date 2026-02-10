@@ -100,6 +100,6 @@ jobs:
               }
             ],
             "channel": "'"${SLACK_CHANNEL}"'",
-            "icon_url": "https://mercatalyst.com/apple-touch-icon.png",
-            "username": "Mercatalyst"
+            "icon_url": "https://stores.com/apple-touch-icon.png",
+            "username": "Stores.com"
           }' ${{ secrets.SLACK_WEBHOOK_URL }}
