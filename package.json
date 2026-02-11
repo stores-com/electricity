@@ -28,6 +28,7 @@
         "snockets"
     ],
     "main": "./lib",
+    "license": "MIT",
     "name": "electricity",
     "repository": "https://github.com/stores-com/electricity",
     "scripts": {
