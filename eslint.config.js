@@ -20,7 +20,6 @@ module.exports = [
             },
             globals: {
                 ...globals.es2020,
-                ...globals.mocha,
                 ...globals.node,
                 //added for 'fetch()' access
                 ...globals.serviceworker,

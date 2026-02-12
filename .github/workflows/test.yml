@@ -28,7 +28,7 @@ jobs:
       run: npx eslint .
 
     - name: Install tools
-      run: npm install -g coveralls nyc
+      run: npm install -g coveralls
 
     - name: Test
       env:
