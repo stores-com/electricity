@@ -8,7 +8,7 @@ const fse = require('fs-extra');
 const electricity = require('../lib/index');
 
 test('electricity.static', { concurrency: true }, async (t) => {
-    await t.test('should default to "public" if a directory isn\'t specified', async () => {
+    t.test('should default to "public" if a directory isn\'t specified', async () => {
         await new Promise((resolve) => {
             const middleware = electricity.static();
 
@@ -25,12 +25,12 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
     });
 
-    await t.test('should return a function', () => {
+    t.test('should return a function', () => {
         const middleware = electricity.static('test/public');
         assert.strictEqual(typeof middleware, 'function');
     });
 
-    await t.test('should call next middleware when the specified file can not be found', async () => {
+    t.test('should call next middleware when the specified file can not be found', async () => {
         await new Promise((resolve) => {
             const middleware = electricity.static('test/public');
 
@@ -48,7 +48,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
     });
 
-    await t.test('should call next middleware when the specified URL is a directory', async () => {
+    t.test('should call next middleware when the specified URL is a directory', async () => {
         await new Promise((resolve) => {
             const middleware = electricity.static('test/public');
 
@@ -66,7 +66,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
     });
 
-    await t.test('should call next middleware with an error if the specified URL is too long', async () => {
+    t.test('should call next middleware with an error if the specified URL is too long', async () => {
         await new Promise((resolve) => {
             const middleware = electricity.static('test/public');
 
@@ -84,9 +84,9 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
     });
 
-    await t.test('babel', async (t) => {
-        await t.test('preset-react', { concurrency: true }, async (t) => {
-            await t.test('should transform JSX files', async () => {
+    t.test('babel', async (t) => {
+        t.test('preset-react', { concurrency: true }, async (t) => {
+            t.test('should transform JSX files', async () => {
                 await new Promise((resolve) => {
                     const middleware = electricity.static('test/public', {
                         babel: {},
@@ -125,7 +125,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
                 });
             });
 
-            await t.test('errors', async (t) => {
+            t.test('errors', async (t) => {
                 //eslint-disable-next-line no-console
                 let consoleWarn = console.warn;
 
@@ -137,7 +137,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
                     console.warn = consoleWarn;
                 });
 
-                await t.test('should return file without transformation on an error', async () => {
+                t.test('should return file without transformation on an error', async () => {
                     await new Promise((resolve) => {
                         const middleware = electricity.static('test/public');
 
@@ -165,8 +165,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
     });
 
-    await t.test('css', { concurrency: true }, async (t) => {
-        await t.test('should read .css files direcly from disk', async () => {
+    t.test('css', { concurrency: true }, async (t) => {
+        t.test('should read .css files direcly from disk', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
                     uglifycss: {
@@ -208,7 +208,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
         });
 
-        await t.test('should call next middleware with an error if the specified URL is too long', async () => {
+        t.test('should call next middleware with an error if the specified URL is too long', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public');
 
@@ -226,7 +226,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
         });
 
-        await t.test('should update URLs', async () => {
+        t.test('should update URLs', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
                     uglifycss: {
@@ -268,7 +268,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
         });
 
-        await t.test('should update URLs and use a CDN', async () => {
+        t.test('should update URLs and use a CDN', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
                     hostname: 'cdn.example.com',
@@ -311,7 +311,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
         });
 
-        await t.test('should call next middleware when the specified file can not be found', async () => {
+        t.test('should call next middleware when the specified file can not be found', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public');
 
@@ -330,8 +330,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
     });
 
-    await t.test('gzip', { concurrency: true }, async (t) => {
-        await t.test('should gzip TXT files for clients that accept gzip', async () => {
+    t.test('gzip', { concurrency: true }, async (t) => {
+        t.test('should gzip TXT files for clients that accept gzip', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public');
 
@@ -357,7 +357,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
         });
 
-        await t.test('should not gzip TXT files for clients that do not accept gzip', async () => {
+        t.test('should not gzip TXT files for clients that do not accept gzip', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public');
 
@@ -383,7 +383,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
         });
 
-        await t.test('should not gzip PNG files', async () => {
+        t.test('should not gzip PNG files', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public');
 
@@ -408,7 +408,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
         });
 
-        await t.test('should not gzip when disabled', async () => {
+        t.test('should not gzip when disabled', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
                     gzip: {
@@ -441,8 +441,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
     });
 
-    await t.test('hashify', { concurrency: true }, async (t) => {
-        await t.test('should hashify by default', async () => {
+    t.test('hashify', { concurrency: true }, async (t) => {
+        t.test('should hashify by default', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public');
 
@@ -480,7 +480,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
         });
 
-        await t.test('should not hashify if disabled', async () => {
+        t.test('should not hashify if disabled', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
                     hashify: false
@@ -509,7 +509,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
         });
 
-        await t.test('should not hashify if enabled', async () => {
+        t.test('should not hashify if enabled', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
                     hashify: true
@@ -532,7 +532,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
         });
 
-        await t.test('should hashify files without extensions', async () => {
+        t.test('should hashify files without extensions', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public');
 
@@ -554,8 +554,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
     });
 
-    await t.test('HTTP headers', { concurrency: true }, async (t) => {
-        await t.test('should allow additional HTTP headers', async () => {
+    t.test('HTTP headers', { concurrency: true }, async (t) => {
+        t.test('should allow additional HTTP headers', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
                     headers: {
@@ -582,7 +582,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
         });
 
-        await t.test('should return a 304 for a valid if-none-match header', async () => {
+        t.test('should return a 304 for a valid if-none-match header', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public');
 
@@ -608,7 +608,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
         });
 
-        await t.test('should return etag header for invalid if-none-match header', async () => {
+        t.test('should return etag header for invalid if-none-match header', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public');
 
@@ -636,8 +636,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
     });
 
-    await t.test('HTTP methods', { concurrency: true }, async (t) => {
-        await t.test('should handle HEAD requests', async () => {
+    t.test('HTTP methods', { concurrency: true }, async (t) => {
+        t.test('should handle HEAD requests', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public');
 
@@ -659,7 +659,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
         });
 
-        await t.test('should not handle POST requests', async () => {
+        t.test('should not handle POST requests', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public');
 
@@ -677,8 +677,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
     });
 
-    await t.test('locals', { concurrency: true }, async (t) => {
-        await t.test('should register a helper function to generate URLs', async () => {
+    t.test('locals', { concurrency: true }, async (t) => {
+        t.test('should register a helper function to generate URLs', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public');
 
@@ -703,7 +703,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
         });
 
-        await t.test('should return a hashified URL for a file that was previously requested', async () => {
+        t.test('should return a hashified URL for a file that was previously requested', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public');
 
@@ -728,7 +728,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
         });
 
-        await t.test('should return original URL path when hashify is disabled', async () => {
+        t.test('should return original URL path when hashify is disabled', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
                     hashify: false
@@ -755,7 +755,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
         });
 
-        await t.test('should return original URL path when the file could not be found', async () => {
+        t.test('should return original URL path when the file could not be found', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public');
 
@@ -777,7 +777,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
         });
 
-        await t.test('should return an absolute URL when the hostname option is specified', async () => {
+        t.test('should return an absolute URL when the hostname option is specified', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
                     hostname: 'cdn.example.com'
@@ -805,8 +805,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
     });
 
-    await t.test('sass', async (t) => {
-        await t.test('should read .scss files', async () => {
+    t.test('sass', async (t) => {
+        t.test('should read .scss files', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
                     sass: {},
@@ -850,8 +850,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
     });
 
-    await t.test('snockets', { concurrency: true }, async (t) => {
-        await t.test('should concatenate files', async () => {
+    t.test('snockets', { concurrency: true }, async (t) => {
+        t.test('should concatenate files', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
                     snockets: {
@@ -897,7 +897,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
         });
 
-        await t.test('errors', async (t) => {
+        t.test('errors', async (t) => {
             //eslint-disable-next-line no-console
             let consoleWarn = console.warn;
 
@@ -909,7 +909,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
                 console.warn = consoleWarn;
             });
 
-            await t.test('should return file without concatenation on an error', async () => {
+            t.test('should return file without concatenation on an error', async () => {
                 await new Promise((resolve) => {
                     const middleware = electricity.static('test/public', {
                         uglifyjs: { enabled: false },
@@ -937,7 +937,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
                 });
             });
 
-            await t.test('should call next middleware with an error if the specified URL is too long', async () => {
+            t.test('should call next middleware with an error if the specified URL is too long', async () => {
                 await new Promise((resolve) => {
                     const middleware = electricity.static('test/public');
 
@@ -957,8 +957,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
     });
 
-    await t.test('uglifycss', async (t) => {
-        await t.test('should uglify files', async () => {
+    t.test('uglifycss', async (t) => {
+        t.test('should uglify files', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public');
 
@@ -998,8 +998,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
     });
 
-    await t.test('uglifyjs', async (t) => {
-        await t.test('should uglify files', async () => {
+    t.test('uglifyjs', async (t) => {
+        t.test('should uglify files', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public');
 
@@ -1039,14 +1039,14 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
     });
 
-    await t.test('watch', async (t) => {
+    t.test('watch', async (t) => {
         await fs.promises.rm('test/public/watch', { recursive: true, force: true });
 
         t.after(async () => {
             await fs.promises.rm('test/public/watch', { recursive: true, force: true });
         });
 
-        await t.test('should watch for file changes', { timeout: 3000 }, async () => {
+        t.test('should watch for file changes', { timeout: 3000 }, async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
                     watch: { enabled: true }
@@ -1121,7 +1121,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
         });
 
-        await t.test('should watch for CSS file changes', { timeout: 3000 }, async () => {
+        t.test('should watch for CSS file changes', { timeout: 3000 }, async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
                     uglifyjs: { enabled: false },
@@ -1201,7 +1201,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
         });
 
-        await t.test('should handle CSS file deletions', { timeout: 3000 }, async () => {
+        t.test('should handle CSS file deletions', { timeout: 3000 }, async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
                     uglifyjs: { enabled: false },
@@ -1259,7 +1259,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
         });
 
-        await t.test('should watch for JavaScript file changes', { timeout: 3000 }, async () => {
+        t.test('should watch for JavaScript file changes', { timeout: 3000 }, async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
                     uglifyjs: { enabled: false },

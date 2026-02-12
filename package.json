@@ -34,5 +34,5 @@
         "coveralls": "node --test --test-concurrency=true --test-force-exit --experimental-test-coverage --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=lcov.info test/index.js && coveralls < lcov.info",
         "test": "node --test --test-concurrency=true --test-force-exit --test-reporter=spec test/index.js"
     },
-    "version": "3.6.2"
+    "version": "3.7.0"
 }
