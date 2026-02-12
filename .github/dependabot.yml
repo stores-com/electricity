@@ -1,5 +1,9 @@
 version: 2
 updates:
+  - directory: "/"
+    package-ecosystem: "github-actions"
+    schedule:
+      interval: "weekly"
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
