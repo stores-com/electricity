@@ -1,6 +1,6 @@
 {
     "dependencies": {
-        "@babel/core": "~7.28.0",
+        "@babel/core": "~7.29.0",
         "@babel/preset-react": "~7.28.5",
         "chokidar": "~3.6.0",
         "mime": "~3.0.0",
