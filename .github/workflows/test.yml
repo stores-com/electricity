@@ -24,14 +24,16 @@ jobs:
     - name: Lint
       run: npx eslint .
 
-    - name: Install tools
-      run: npm install -g coveralls
-
     - name: Test
-      env:
-        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
       run: |
-        npm run coveralls
+        node --test --test-force-exit --experimental-test-coverage --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=lcov.info test/index.js
+
+    - name: Upload coverage to Coveralls
+      if: success()
+      uses: coverallsapp/github-action@v2
+      with:
+        fail-on-error: false
+        file: lcov.info
 
     - if: always()
       name: Send Slack notification
