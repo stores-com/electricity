@@ -2,6 +2,8 @@
 
 [![Build Status](https://github.com/stores-com/electricity/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/stores-com/electricity/actions?query=workflow%3Abuild+branch%3Amain)
 [![Coverage Status](https://coveralls.io/repos/github/stores-com/electricity/badge.svg?branch=main)](https://coveralls.io/github/stores-com/electricity?branch=main)
+[![npm version](https://img.shields.io/npm/v/electricity)](https://www.npmjs.com/package/electricity)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 An alternative to the built-in Express middleware for serving static files.
 Electricity follows a number of best practices for making web pages fast.
