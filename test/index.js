@@ -84,6 +84,34 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
     });
 
+    t.test('should not throw when options can not be cloned to the warm worker', async () => {
+        // A Sass importer is a function, which can't be structured-cloned to
+        // the background warm worker. static() must not throw; warming is
+        // simply skipped for this instance and the synchronous read still
+        // serves the file.
+        await new Promise((resolve) => {
+            const middleware = electricity.static('test/public', {
+                sass: { importers: [() => null] }
+            });
+
+            const req = {
+                get: () => {},
+                method: 'GET',
+                path: '/robots.txt'
+            };
+
+            const res = {
+                redirect: (path) => {
+                    assert.strictEqual(path, '/robots-423251d722a53966eb9368c65bfd14b39649105d.txt');
+                    resolve();
+                },
+                set: () => {}
+            };
+
+            middleware(req, res);
+        });
+    });
+
     t.test('babel', async (t) => {
         t.test('preset-react', { concurrency: true }, async (t) => {
             t.test('should transform JSX files', async () => {
