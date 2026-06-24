@@ -18,7 +18,7 @@ jobs:
       run: gh run list --repo ${{ github.repository }} --workflow=test.yml --branch=main --limit=1 --json conclusion --jq '.[0].conclusion' | grep -q success
 
     - name: Checkout
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
 
     - name: Setup Node
       uses: actions/setup-node@v6
