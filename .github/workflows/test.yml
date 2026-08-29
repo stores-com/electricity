@@ -13,6 +13,7 @@ jobs:
     env:
       NODE_VERSION: 24.11.0
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
     - name: Setup Node ${{ env.NODE_VERSION }}
