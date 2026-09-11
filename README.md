@@ -34,15 +34,11 @@ app.use(electricity.static('public'));
 
 ## Background Cache Warming
 
-Call `warmup()` on the middleware to build assets in the background at startup:
+Electricity v4 automatically starts building assets in the background when you create the middleware:
 
 ```javascript
 const assets = electricity.static('public');
 app.use(assets);
-
-assets.warmup().catch(err => {
-    console.error('Electricity cache warming failed:', err);
-});
 ```
 
 One Node.js worker thread scans the public directory and runs Electricity's existing compilation, hashing, and gzip pipeline. It builds assets sequentially and sends each completed asset into the serving process's cache, so compilation does not block the HTTP event loop. No additional dependencies or worker pool configuration are needed. The worker exits when the batch finishes; repeated calls to `warmup()` return the same promise.
@@ -58,11 +54,19 @@ await assets.warmup();
 app.listen(3000);
 ```
 
-Warming is optional and intended for production, where assets stay unchanged for the lifetime of the process. It rejects when `watch.enabled` is true. For development, keep the existing lazy compilation and watcher; for example, call `warmup()` only when `process.env.NODE_ENV === 'production'`.
+To disable automatic warming and build assets only as they are requested:
 
-Asset processing options must be [structured-cloneable](https://nodejs.org/download/release/v24.11.0/docs/api/worker_threads.html#considerations-when-cloning-objects-with-prototypes-classes-and-accessors). Babel plugins can be specified by module path, but inline plugin functions, Sass importer callbacks, and other function-valued asset processing options cannot cross the worker boundary. Unsupported options reject the promise without changing normal lazy serving. HTTP headers are not sent to the worker.
+```javascript
+app.use(electricity.static('public', {
+    warmup: { enabled: false }
+}));
+```
 
-If an asset fails to build, warming continues for the remaining files and then rejects with an `AggregateError`; its `errors` array identifies the failed paths. Successfully warmed files remain cached. Compiler warnings and fallback behavior are the same as during a normal request. Worker startup failures or unexpected exits also reject the promise. Always await it or attach a rejection handler, as above.
+You can still call `warmup()` manually when automatic warming is disabled. Warming is intended for assets that stay unchanged for the lifetime of the process. When `watch.enabled` is true, automatic warming is skipped so development keeps its existing lazy compilation and dependency tracking. Calling `warmup()` manually in watch mode rejects.
+
+Asset processing options must be [structured-cloneable](https://nodejs.org/download/release/v24.11.0/docs/api/worker_threads.html#considerations-when-cloning-objects-with-prototypes-classes-and-accessors). Babel plugins can be specified by module path, but inline plugin functions, Sass importer callbacks, and other function-valued asset processing options cannot cross the worker boundary. Disable automatic warming if you need these callbacks. Unsupported options reject the promise without changing normal lazy serving. HTTP headers are not sent to the worker.
+
+If an asset fails to build, warming continues for the remaining files and then rejects with an `AggregateError`; its `errors` array identifies the failed paths. Successfully warmed files remain cached. Compiler warnings and fallback behavior are the same as during a normal request. Worker startup failures or unexpected exits also reject the promise. Automatic warming logs failures with `console.warn` and lets normal serving continue. Calling `warmup()` returns the same promise, including its rejection, so awaiting it before `app.listen()` can prevent startup on failure. When starting warming manually, await the promise or attach a rejection handler.
 
 ## View Helper
 
@@ -94,6 +98,7 @@ Electricity comes with a variety of features to help make your web pages fast wi
 - **HTTP Headers:** Electricity sets proper `Cache-Control`, `ETag`, and `Expires`, headers to help avoid unnecessary HTTP requests on subsequent page views.
 - **Minification of JavaScript and CSS:** Electricity minifies JavaScript and CSS files in order to improve response time by reducing file sizes.
 - **Gzip:** Electricity gzips many content types (CSS, HTML, JavaScript, JSON, plaintext, XML) to reduce response sizes.
+- **Background Cache Warming:** Electricity builds and caches assets on a worker thread by default. Disable it with `warmup: { enabled: false }`; watch mode skips it automatically.
 - **Snockets:** Electricity supports Snockets (A JavaScript concatenation tool for Node.js inspired by Sprockets). You can use Snockets to combine multiple JavaScript files into a single JavaScript file which helps minimize HTTP requests.
 - **Sass:** Electricity supports Sass (Sassy CSS). Among other features, Sass can be used to combine multiple CSS files into a single CSS file which helps minimize HTTP requests. NOTE: We currently only support .scss files (not .sass files written in the older syntax).
 - **React JSX:** Electricity transforms JSX using [Babel 8](https://babeljs.io/docs/) with the classic React runtime and development output disabled. Generated scripts use the global `React` object. Custom Babel plugins and options must support Babel 8.
@@ -117,6 +122,12 @@ const options = {
     },
     uglifycss: {
         enabled: true
+    },
+    warmup: {
+        enabled: true
+    },
+    watch: {
+        enabled: false
     }
 };
 ```
@@ -149,6 +160,9 @@ var options = {
     },
     uglifycss: { // Object passed straight to uglifycss options: https://github.com/fmarcia/uglifycss
         enabled: false // Do not minify CSS
+    },
+    warmup: {
+        enabled: false // Build assets only when requested
     }
 };
 ```

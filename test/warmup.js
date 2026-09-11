@@ -133,6 +133,47 @@ test('warmup populates the serving cache with compiled assets, hashes, binary da
     });
 });
 
+test('opting out preserves lazy serving and allows manual warming later', async t => {
+    const { directory } = fixture(t, {
+        'lazy.txt': 'available on demand',
+        'manual.scss': 'body { color: purple; }'
+    });
+    const middleware = electricity.static(directory, { hashify: false, warmup: { enabled: false } });
+    assert.equal(request(middleware, '/lazy.txt').body.toString(), 'available on demand');
+
+    const pending = middleware.warmup();
+    assert.equal(middleware.warmup(), pending);
+    await pending;
+    withoutAssetReads(t, directory, () => {
+        assert.equal(request(middleware, '/manual.css').body, 'body{color:purple}');
+        assert.equal(request(middleware, '/lazy.txt').body.toString(), 'available on demand');
+    });
+});
+
+test('automatic warming reports failures without an unhandled rejection and preserves the rejected promise', { timeout: 15000 }, async t => {
+    const { directory } = fixture(t, {
+        'broken.scss': 'body { color: $undefined; }',
+        'healthy.txt': 'still cached'
+    });
+    const warned = Promise.withResolvers();
+    const warnings = t.mock.method(console, 'warn', (...args) => warned.resolve(args));
+    const middleware = electricity.static(directory, { hashify: false });
+
+    // Observe the automatic failure before attaching any caller rejection handler.
+    const [message, error] = await warned.promise;
+    assert.match(message, /cache warming failed/i);
+    assert.ok(error instanceof AggregateError);
+    assert.match(error.errors[0].message, /broken\.css/);
+    const pending = middleware.warmup();
+    await assert.rejects(pending, received => received === error);
+    assert.equal(middleware.warmup(), pending);
+    await delay(0);
+    assert.equal(warnings.mock.callCount(), 1);
+    withoutAssetReads(t, directory, () => {
+        assert.equal(request(middleware, '/healthy.txt').body.toString(), 'still cached');
+    });
+});
+
 test('warmed responses exactly match lazy compilation with custom options and a CDN', async t => {
     const { root, directory } = fixture(t, {
         'main.scss': '@use "palette"; body { background: url("/pixel.png"); } @for $i from 1 through 100 { .item-#{$i} { color: palette.$accent; } }',
@@ -151,7 +192,7 @@ test('warmed responses exactly match lazy compilation with custom options and a 
         uglifycss: { enabled: true, maxLineLen: 120 },
         uglifyjs: { enabled: true, compress: false, mangle: false, output: { beautify: true } }
     };
-    const lazy = electricity.static(directory, structuredClone(options));
+    const lazy = electricity.static(directory, { ...structuredClone(options), warmup: { enabled: false } });
     const warmed = electricity.static(directory, structuredClone(options));
     const assetPaths = ['/main.css', '/main.js', '/large.txt'];
 
@@ -193,7 +234,7 @@ test('JSX remains a standalone script with spread props in development and produ
         let expected;
         for (const envName of ['development', 'production']) {
             const options = { hashify: false, babel: { envName }, uglifyjs: { enabled } };
-            const lazy = electricity.static(directory, structuredClone(options));
+            const lazy = electricity.static(directory, { ...structuredClone(options), warmup: { enabled: false } });
             const warmed = electricity.static(directory, structuredClone(options));
             const response = request(lazy, '/main.js');
             assert.equal(response.headers['content-type'], 'text/javascript');
@@ -222,7 +263,7 @@ test('Unicode JavaScript uses UTF-8 byte lengths for plain responses and gzip el
         'main.js': `globalThis.message = "${'é'.repeat(800)}";`
     });
     const options = { hashify: false, uglifyjs: { enabled: false } };
-    const lazy = electricity.static(directory, structuredClone(options));
+    const lazy = electricity.static(directory, { ...structuredClone(options), warmup: { enabled: false } });
     const warmed = electricity.static(directory, structuredClone(options));
     const plain = request(lazy, '/main.js');
     const compressed = request(lazy, '/main.js', { 'accept-encoding': 'gzip' });
@@ -286,7 +327,7 @@ test('an individual compilation failure rejects warmup after other assets have b
         'z-healthy.scss': 'body { color: green; }',
         'z-healthy.txt': 'still available'
     });
-    const middleware = electricity.static(directory, { hashify: false });
+    const middleware = electricity.static(directory, { hashify: false, warmup: { enabled: false } });
     const pending = middleware.warmup();
 
     await assert.rejects(pending, error => {
@@ -305,7 +346,7 @@ test('an individual compilation failure rejects warmup after other assets have b
 
 test('warmup rejects when its root directory does not exist', async t => {
     const { directory } = fixture(t, {});
-    const middleware = electricity.static(path.join(directory, 'missing'));
+    const middleware = electricity.static(path.join(directory, 'missing'), { warmup: { enabled: false } });
     const pending = middleware.warmup();
 
     await assert.rejects(pending, error => {
@@ -317,10 +358,12 @@ test('warmup rejects when its root directory does not exist', async t => {
     assert.equal(middleware.warmup(), pending);
 });
 
-test('warmup rejects noncloneable asset processing options while lazy compilation remains usable', async t => {
+test('opting out avoids automatic clone errors while manual warming still rejects unsupported options', async t => {
     const { directory } = fixture(t, { 'main.js': 'globalThis.answer = 1;' });
+    const warnings = t.mock.method(console, 'warn', () => {});
     const middleware = electricity.static(directory, {
         hashify: false,
+        warmup: { enabled: false },
         babel: {
             plugins: [() => ({
                 visitor: {
@@ -330,15 +373,22 @@ test('warmup rejects noncloneable asset processing options while lazy compilatio
         }
     });
 
-    await assert.rejects(middleware.warmup(), /clone|serializ/i);
+    await delay(0);
+    assert.equal(warnings.mock.callCount(), 0);
     assert.match(request(middleware, '/main.js').body, /globalThis\.answer=2/);
+    await assert.rejects(middleware.warmup(), /clone|serializ/i);
+    assert.equal(warnings.mock.callCount(), 0);
 });
 
-test('warmup rejects watch mode', async t => {
+test('watch mode skips automatic warming and still rejects manual warming', async t => {
     const { directory } = fixture(t, { 'main.txt': 'watched asset' });
-    t.mock.method(chokidar, 'watch', () => ({ on() { return this; } }));
-    const middleware = electricity.static(directory, { watch: { enabled: true } });
+    const warnings = t.mock.method(console, 'warn', () => {});
+    t.mock.method(chokidar, 'watch', () => ({ on() { return this; }, add() { return this; } }));
+    const middleware = electricity.static(directory, { hashify: false, watch: { enabled: true } });
 
+    await delay(0);
+    assert.equal(warnings.mock.callCount(), 0);
+    assert.equal(request(middleware, '/main.txt').body.toString(), 'watched asset');
     await assert.rejects(middleware.warmup(), /watch/i);
 });
 
@@ -371,12 +421,15 @@ module.exports = () => {
     return {};
 };
 `);
-        const middleware = electricity.static(directory, { babel: { plugins: [plugin] } });
+        const middleware = electricity.static(directory, {
+            babel: { plugins: [plugin] },
+            warmup: { enabled: false }
+        });
         await assert.rejects(middleware.warmup(), failure.expected);
     }
 });
 
-test('compilation runs off the event loop and cannot replace an asset already built by a request', { timeout: 30000 }, async t => {
+test('automatic compilation starts off the event loop and preserves an asset already built by a request', { timeout: 30000 }, async t => {
     const { root, directory } = fixture(t, {
         'main.js': 'globalThis.buildOrigin = "worker";',
         'health.txt': 'responsive'
@@ -408,15 +461,14 @@ module.exports = (api, options) => ({
         hashify: false,
         babel: { plugins: [[plugin, { signal }]] }
     });
-    const pending = middleware.warmup();
+    let pending;
 
     try {
-        await Promise.race([
-            Atomics.waitAsync(state, 0, 0, 15000).value,
-            pending.then(() => assert.fail('Warmup completed before entering the worker plugin'))
-        ]);
+        await Atomics.waitAsync(state, 0, 0, 15000).value;
         assert.equal(Atomics.load(state, 0), 1, 'the worker is still compiling');
         assert.ok(Atomics.load(state, 3) > 0, 'the compiler ran in a worker thread');
+        pending = middleware.warmup();
+        assert.equal(middleware.warmup(), pending, 'manual calls reuse the automatic run');
         fs.writeFileSync(path.join(directory, 'main.js'), 'globalThis.buildOrigin = "request";');
 
         await delay(0);
@@ -426,7 +478,7 @@ module.exports = (api, options) => ({
         assert.ok(Atomics.load(state, 2) > 0, 'the compiler performed CPU work concurrently');
     } finally {
         Atomics.store(state, 1, 1);
-        await pending;
+        await (pending ?? middleware.warmup());
     }
 
     withoutAssetReads(t, directory, () => {
