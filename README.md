@@ -8,6 +8,8 @@
 An alternative to the built-in Express middleware for serving static files.
 Electricity follows a number of best practices for making web pages fast.
 
+Requires Node.js 24.18.0 or newer.
+
 The built-in Express middleware for serving static files is great if you need basic support for serving static files.
 But if you want to follow [Best Practices for Speeding Up Your Web Site](http://developer.yahoo.com/performance/rules.html) you need something that can concat, gzip, and minify your static files. Electricity does all this and more without the need to create a complicated build process using Grunt or a similar build tool.
 
@@ -29,6 +31,38 @@ const electricity = require('electricity');
 
 app.use(electricity.static('public'));
 ```
+
+## Background Cache Warming
+
+Call `warmup()` on the middleware to build assets in the background at startup:
+
+```javascript
+const assets = electricity.static('public');
+app.use(assets);
+
+assets.warmup().catch(err => {
+    console.error('Electricity cache warming failed:', err);
+});
+```
+
+One Node.js worker thread scans the public directory and runs Electricity's existing compilation, hashing, and gzip pipeline. It builds assets sequentially and sends each completed asset into the serving process's cache, so compilation does not block the HTTP event loop. No additional dependencies or worker pool configuration are needed. The worker exits when the batch finishes; repeated calls to `warmup()` return the same promise.
+
+The scan includes nested directories, directory symlinks, and static assets such as images and fonts. Sass entry points are warmed at their `.css` URLs; underscore-prefixed Sass partials are compiled through their entry points. An existing `.css` file takes precedence over a matching `.scss` file, just as it does for normal requests. Every middleware instance has its own cache and warmup worker; warming is local to that Node.js process.
+
+Warming loads the public assets into memory, with an additional copy held by the worker until it exits. Account for the size of the public directory when using it with large media files.
+
+Requests and the synchronous `electricity.url()` helper continue working while warming runs. An asset requested before it is ready still uses the normal synchronous compilation path. To ensure even the first page uses a warm cache, await completion before accepting traffic:
+
+```javascript
+await assets.warmup();
+app.listen(3000);
+```
+
+Warming is optional and intended for production, where assets stay unchanged for the lifetime of the process. It rejects when `watch.enabled` is true. For development, keep the existing lazy compilation and watcher; for example, call `warmup()` only when `process.env.NODE_ENV === 'production'`.
+
+Compiler options must be [structured-cloneable](https://nodejs.org/download/release/v24.18.0/docs/api/worker_threads.html#considerations-when-cloning-objects-with-prototypes-classes-and-accessors). Babel plugins can be specified by module path, but inline plugin functions, Sass importer callbacks, and other function-valued compiler options cannot cross the worker boundary. Unsupported options reject the promise without changing normal lazy serving. HTTP headers are not sent to the worker.
+
+If an asset fails to build, warming continues for the remaining files and then rejects with an `AggregateError`; its `errors` array identifies the failed paths. Successfully warmed files remain cached. Compiler warnings and fallback behavior are the same as during a normal request. Worker startup failures or unexpected exits also reject the promise. Always await it or attach a rejection handler, as above.
 
 ## View Helper
 

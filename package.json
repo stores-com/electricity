@@ -12,6 +12,9 @@
         "uglifycss": "~0.0.29"
     },
     "description": "An alternative to the built-in Express middleware for serving static files. Electricity follows a number of best practices for making web pages fast.",
+    "engines": {
+        "node": ">=24.18.0"
+    },
     "devDependencies": {
         "@eslint/js": "*",
         "fs-extra": "*",
@@ -34,9 +37,9 @@
         "url": "git+https://github.com/stores-com/electricity.git"
     },
     "scripts": {
-        "coveralls": "node --test --test-force-exit --experimental-test-coverage --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=lcov.info test/index.js && coveralls < lcov.info",
-        "test": "node --test --test-force-exit --test-reporter=spec test/index.js",
-        "test:only": "node --test --test-force-exit --test-only --test-reporter=spec test/index.js"
+        "coveralls": "node --test --test-force-exit --experimental-test-coverage --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=lcov.info test/*.js && coveralls < lcov.info",
+        "test": "node --test --test-force-exit --test-reporter=spec test/*.js",
+        "test:only": "node --test --test-force-exit --test-only --test-reporter=spec test/*.js"
     },
     "version": "3.7.1"
 }
