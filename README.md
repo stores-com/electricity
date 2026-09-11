@@ -8,7 +8,7 @@
 An alternative to the built-in Express middleware for serving static files.
 Electricity follows a number of best practices for making web pages fast.
 
-Requires Node.js 20.19.0 or newer.
+Requires Node.js 22.18+ on the 22.x line, or Node.js 24.11+ (`^22.18.0 || >=24.11.0`), matching [Babel 8's requirements](https://babeljs.io/docs/v8-migration#nodejs-support).
 
 The built-in Express middleware for serving static files is great if you need basic support for serving static files.
 But if you want to follow [Best Practices for Speeding Up Your Web Site](http://developer.yahoo.com/performance/rules.html) you need something that can concat, gzip, and minify your static files. Electricity does all this and more without the need to create a complicated build process using Grunt or a similar build tool.
@@ -60,7 +60,7 @@ app.listen(3000);
 
 Warming is optional and intended for production, where assets stay unchanged for the lifetime of the process. It rejects when `watch.enabled` is true. For development, keep the existing lazy compilation and watcher; for example, call `warmup()` only when `process.env.NODE_ENV === 'production'`.
 
-Asset processing options must be [structured-cloneable](https://nodejs.org/download/release/v20.19.0/docs/api/worker_threads.html#considerations-when-cloning-objects-with-prototypes-classes-and-accessors). Babel plugins can be specified by module path, but inline plugin functions, Sass importer callbacks, and other function-valued asset processing options cannot cross the worker boundary. Unsupported options reject the promise without changing normal lazy serving. HTTP headers are not sent to the worker.
+Asset processing options must be [structured-cloneable](https://nodejs.org/download/release/v22.18.0/docs/api/worker_threads.html#considerations-when-cloning-objects-with-prototypes-classes-and-accessors). Babel plugins can be specified by module path, but inline plugin functions, Sass importer callbacks, and other function-valued asset processing options cannot cross the worker boundary. Unsupported options reject the promise without changing normal lazy serving. HTTP headers are not sent to the worker.
 
 If an asset fails to build, warming continues for the remaining files and then rejects with an `AggregateError`; its `errors` array identifies the failed paths. Successfully warmed files remain cached. Compiler warnings and fallback behavior are the same as during a normal request. Worker startup failures or unexpected exits also reject the promise. Always await it or attach a rejection handler, as above.
 
@@ -96,7 +96,7 @@ Electricity comes with a variety of features to help make your web pages fast wi
 - **Gzip:** Electricity gzips many content types (CSS, HTML, JavaScript, JSON, plaintext, XML) to reduce response sizes.
 - **Snockets:** Electricity supports Snockets (A JavaScript concatenation tool for Node.js inspired by Sprockets). You can use Snockets to combine multiple JavaScript files into a single JavaScript file which helps minimize HTTP requests.
 - **Sass:** Electricity supports Sass (Sassy CSS). Among other features, Sass can be used to combine multiple CSS files into a single CSS file which helps minimize HTTP requests. NOTE: We currently only support .scss files (not .sass files written in the older syntax).
-- **React JSX:** Electricty transforms [React JSX](http://facebook.github.io/react/docs/jsx-in-depth.html) for you automatically using [babel-core](https://www.npmjs.com/package/babel-core) without the need for client-side translation or build steps.
+- **React JSX:** Electricity transforms JSX using [Babel 8](https://babeljs.io/docs/) with the classic React runtime and development output disabled. Generated scripts use the global `React` object. Custom Babel plugins and options must support Babel 8.
 - **CDN Hostname:** If you're using a CDN (Content Delivery Network) that supports a custom origin (like Amazon CloudFront) you can specify the hostname you'd like Electricity to use when generating URLs.
 - **Watch:** Electricity watches for changes to your static files and automatically serves the latest content without the need to restart your web server (useful during development). Electricity also understands Sass and Snockets dependency graphs to ensure the parent file contents are updated if a child file has been modified.
 

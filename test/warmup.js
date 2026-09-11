@@ -4,9 +4,10 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const vm = require('node:vm');
 const zlib = require('node:zlib');
 
-const chokidar = require('chokidar');
+const chokidar = require('chokidar').default;
 
 const electricity = require('../lib');
 
@@ -179,6 +180,69 @@ test('warmed responses exactly match lazy compilation with custom options and a 
             assert.deepEqual(snapshot(warmed, assetPath, false), expected[index].plain);
             assert.deepEqual(snapshot(warmed, assetPath, true), expected[index].gzip);
         });
+    });
+});
+
+test('JSX remains a standalone script with spread props in development and production', async t => {
+    const { directory } = fixture(t, {
+        'main.js': 'globalThis.element = <h1 id="before" {...props} title="after">Hello</h1>;'
+    });
+
+    for (const enabled of [false, true]) {
+        let expected;
+        for (const envName of ['development', 'production']) {
+            const options = { hashify: false, babel: { envName }, uglifyjs: { enabled } };
+            const lazy = electricity.static(directory, structuredClone(options));
+            const warmed = electricity.static(directory, structuredClone(options));
+            const response = request(lazy, '/main.js');
+            assert.equal(response.headers['content-type'], 'text/javascript');
+
+            const context = {
+                props: { id: 'spread', title: 'before', hidden: true },
+                React: { createElement: (tag, props, ...children) => ({ tag, props, children }) }
+            };
+            vm.runInNewContext(response.body, context);
+            assert.equal(context.element.tag, 'h1');
+            assert.deepEqual({ ...context.element.props }, { id: 'spread', title: 'after', hidden: true });
+            assert.deepEqual(context.element.children, ['Hello']);
+
+            expected ??= response.body;
+            assert.equal(response.body, expected);
+            await warmed.warmup();
+            withoutAssetReads(t, directory, () => {
+                assert.equal(request(warmed, '/main.js').body, response.body);
+            });
+        }
+    }
+});
+
+test('Unicode JavaScript uses UTF-8 byte lengths for plain responses and gzip eligibility', async t => {
+    const { directory } = fixture(t, {
+        'main.js': `globalThis.message = "${'é'.repeat(800)}";`
+    });
+    const options = { hashify: false, uglifyjs: { enabled: false } };
+    const lazy = electricity.static(directory, structuredClone(options));
+    const warmed = electricity.static(directory, structuredClone(options));
+    const plain = request(lazy, '/main.js');
+    const compressed = request(lazy, '/main.js', { 'accept-encoding': 'gzip' });
+
+    assert.ok(plain.body.includes('é'));
+    assert.ok(plain.body.length < 1500);
+    assert.ok(Buffer.byteLength(plain.body) > 1500);
+    assert.equal(plain.headers['content-length'], String(Buffer.byteLength(plain.body)));
+    assert.equal(compressed.headers['content-encoding'], 'gzip');
+    assert.equal(compressed.headers['content-length'], String(compressed.body.length));
+    assert.equal(zlib.gunzipSync(compressed.body).toString(), plain.body);
+
+    await warmed.warmup();
+    withoutAssetReads(t, directory, () => {
+        const warmedPlain = request(warmed, '/main.js');
+        const warmedCompressed = request(warmed, '/main.js', { 'accept-encoding': 'gzip' });
+        assert.equal(warmedPlain.body, plain.body);
+        assert.equal(warmedPlain.headers['content-length'], plain.headers['content-length']);
+        assert.deepEqual(warmedCompressed.body, compressed.body);
+        assert.equal(warmedCompressed.headers['content-encoding'], 'gzip');
+        assert.equal(warmedCompressed.headers['content-length'], compressed.headers['content-length']);
     });
 });
 

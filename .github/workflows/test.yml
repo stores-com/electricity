@@ -11,7 +11,7 @@ jobs:
   test:
     if: github.actor != 'dependabot[bot]'
     env:
-      NODE_VERSION: 20.19.0
+      NODE_VERSION: 22.18.0
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
