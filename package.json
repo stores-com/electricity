@@ -13,7 +13,7 @@
     },
     "description": "An alternative to the built-in Express middleware for serving static files. Electricity follows a number of best practices for making web pages fast.",
     "engines": {
-        "node": ">=24.18.0"
+        "node": ">=20.19.0"
     },
     "devDependencies": {
         "@eslint/js": "*",

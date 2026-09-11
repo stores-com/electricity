@@ -8,7 +8,7 @@
 An alternative to the built-in Express middleware for serving static files.
 Electricity follows a number of best practices for making web pages fast.
 
-Requires Node.js 24.18.0 or newer.
+Requires Node.js 20.19.0 or newer.
 
 The built-in Express middleware for serving static files is great if you need basic support for serving static files.
 But if you want to follow [Best Practices for Speeding Up Your Web Site](http://developer.yahoo.com/performance/rules.html) you need something that can concat, gzip, and minify your static files. Electricity does all this and more without the need to create a complicated build process using Grunt or a similar build tool.
@@ -60,7 +60,7 @@ app.listen(3000);
 
 Warming is optional and intended for production, where assets stay unchanged for the lifetime of the process. It rejects when `watch.enabled` is true. For development, keep the existing lazy compilation and watcher; for example, call `warmup()` only when `process.env.NODE_ENV === 'production'`.
 
-Asset processing options must be [structured-cloneable](https://nodejs.org/download/release/v24.18.0/docs/api/worker_threads.html#considerations-when-cloning-objects-with-prototypes-classes-and-accessors). Babel plugins can be specified by module path, but inline plugin functions, Sass importer callbacks, and other function-valued asset processing options cannot cross the worker boundary. Unsupported options reject the promise without changing normal lazy serving. HTTP headers are not sent to the worker.
+Asset processing options must be [structured-cloneable](https://nodejs.org/download/release/v20.19.0/docs/api/worker_threads.html#considerations-when-cloning-objects-with-prototypes-classes-and-accessors). Babel plugins can be specified by module path, but inline plugin functions, Sass importer callbacks, and other function-valued asset processing options cannot cross the worker boundary. Unsupported options reject the promise without changing normal lazy serving. HTTP headers are not sent to the worker.
 
 If an asset fails to build, warming continues for the remaining files and then rejects with an `AggregateError`; its `errors` array identifies the failed paths. Successfully warmed files remain cached. Compiler warnings and fallback behavior are the same as during a normal request. Worker startup failures or unexpected exits also reject the promise. Always await it or attach a rejection handler, as above.
 
