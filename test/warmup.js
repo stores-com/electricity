@@ -415,9 +415,9 @@ test('warmup rejects uncaught worker errors and premature worker exits', async t
     for (const failure of failures) {
         const plugin = path.join(root, `${failure.name}.cjs`);
         fs.writeFileSync(plugin, `
-const { isMainThread } = require('node:worker_threads');
+const workerThreads = require('node:worker_threads');
 module.exports = () => {
-    if (!isMainThread) { ${failure.code} }
+    if (!workerThreads.isMainThread) { ${failure.code} }
     return {};
 };
 `);
@@ -436,13 +436,13 @@ test('automatic compilation starts off the event loop and preserves an asset alr
     });
     const plugin = path.join(root, 'busy-plugin.cjs');
     fs.writeFileSync(plugin, `
-const { isMainThread, threadId } = require('node:worker_threads');
+const workerThreads = require('node:worker_threads');
 module.exports = (api, options) => ({
     visitor: {
         Program() {
-            if (isMainThread) return;
+            if (workerThreads.isMainThread) return;
             const state = new Int32Array(options.signal);
-            Atomics.store(state, 3, threadId);
+            Atomics.store(state, 3, workerThreads.threadId);
             Atomics.store(state, 0, 1);
             Atomics.notify(state, 0);
             const deadline = Date.now() + 20000;
