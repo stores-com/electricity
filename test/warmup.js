@@ -4,6 +4,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { setTimeout: delay } = require('node:timers/promises');
 const vm = require('node:vm');
 const zlib = require('node:zlib');
 
@@ -418,19 +419,11 @@ module.exports = (api, options) => ({
         assert.ok(Atomics.load(state, 3) > 0, 'the compiler ran in a worker thread');
         fs.writeFileSync(path.join(directory, 'main.js'), 'globalThis.buildOrigin = "request";');
 
-        await new Promise((resolve, reject) => {
-            setTimeout(() => {
-                try {
-                    assert.equal(Atomics.load(state, 0), 1, 'timers execute during compilation');
-                    assert.equal(request(middleware, '/health.txt').body.toString(), 'responsive');
-                    assert.match(request(middleware, '/main.js').body, /buildOrigin="request"/);
-                    assert.ok(Atomics.load(state, 2) > 0, 'the compiler performed CPU work concurrently');
-                    resolve();
-                } catch (error) {
-                    reject(error);
-                }
-            }, 0);
-        });
+        await delay(0);
+        assert.equal(Atomics.load(state, 0), 1, 'timers execute during compilation');
+        assert.equal(request(middleware, '/health.txt').body.toString(), 'responsive');
+        assert.match(request(middleware, '/main.js').body, /buildOrigin="request"/);
+        assert.ok(Atomics.load(state, 2) > 0, 'the compiler performed CPU work concurrently');
     } finally {
         Atomics.store(state, 1, 1);
         await pending;
