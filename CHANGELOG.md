@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Use UTF-8 byte lengths for response headers and gzip eligibility, including Unicode JavaScript output.
+- Rebuild every cached JavaScript bundle when a shared dependency changes.
 
 ## [3.6.1] - 2025-01-21
 ### Changed
