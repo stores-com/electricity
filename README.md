@@ -60,7 +60,7 @@ app.listen(3000);
 
 Warming is optional and intended for production, where assets stay unchanged for the lifetime of the process. It rejects when `watch.enabled` is true. For development, keep the existing lazy compilation and watcher; for example, call `warmup()` only when `process.env.NODE_ENV === 'production'`.
 
-Compiler options must be [structured-cloneable](https://nodejs.org/download/release/v24.18.0/docs/api/worker_threads.html#considerations-when-cloning-objects-with-prototypes-classes-and-accessors). Babel plugins can be specified by module path, but inline plugin functions, Sass importer callbacks, and other function-valued compiler options cannot cross the worker boundary. Unsupported options reject the promise without changing normal lazy serving. HTTP headers are not sent to the worker.
+Asset processing options must be [structured-cloneable](https://nodejs.org/download/release/v24.18.0/docs/api/worker_threads.html#considerations-when-cloning-objects-with-prototypes-classes-and-accessors). Babel plugins can be specified by module path, but inline plugin functions, Sass importer callbacks, and other function-valued asset processing options cannot cross the worker boundary. Unsupported options reject the promise without changing normal lazy serving. HTTP headers are not sent to the worker.
 
 If an asset fails to build, warming continues for the remaining files and then rejects with an `AggregateError`; its `errors` array identifies the failed paths. Successfully warmed files remain cached. Compiler warnings and fallback behavior are the same as during a normal request. Worker startup failures or unexpected exits also reject the promise. Always await it or attach a rejection handler, as above.
 

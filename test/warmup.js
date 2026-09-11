@@ -252,7 +252,7 @@ test('warmup rejects when its root directory does not exist', async t => {
     assert.equal(middleware.warmup(), pending);
 });
 
-test('warmup rejects noncloneable compiler options while lazy compilation remains usable', async t => {
+test('warmup rejects noncloneable asset processing options while lazy compilation remains usable', async t => {
     const { directory } = fixture(t, { 'main.js': 'globalThis.answer = 1;' });
     const middleware = electricity.static(directory, {
         hashify: false,
