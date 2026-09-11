@@ -376,7 +376,10 @@ test('opting out avoids automatic clone errors while manual warming still reject
     await delay(0);
     assert.equal(warnings.mock.callCount(), 0);
     assert.match(request(middleware, '/main.js').body, /globalThis\.answer=2/);
-    await assert.rejects(middleware.warmup(), /clone|serializ/i);
+    await assert.rejects(middleware.warmup(), error => {
+        assert.equal(error.cause.name, 'DataCloneError');
+        return true;
+    });
     assert.equal(warnings.mock.callCount(), 0);
 });
 
@@ -391,7 +394,7 @@ test('automatic warming rejects uncloneable headers while lazy serving remains u
 
     const [message, error] = await warned.promise;
     assert.match(message, /cache warming failed/i);
-    assert.match(error.message, /clone|serializ/i);
+    assert.equal(error.cause.name, 'DataCloneError');
     await assert.rejects(middleware.warmup(), received => received === error);
     const response = request(middleware, '/main.css');
     assert.equal(response.body, 'body{color:green}');
