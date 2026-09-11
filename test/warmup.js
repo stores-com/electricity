@@ -138,7 +138,7 @@ test('opting out preserves lazy serving and allows manual warming later', async 
         'lazy.txt': 'available on demand',
         'manual.scss': 'body { color: purple; }'
     });
-    const middleware = electricity.static(directory, { hashify: false, warmup: { enabled: false } });
+    const middleware = electricity.static(directory, { hashify: false, warmup: false });
     assert.equal(request(middleware, '/lazy.txt').body.toString(), 'available on demand');
 
     const pending = middleware.warmup();
@@ -192,7 +192,7 @@ test('warmed responses exactly match lazy compilation with custom options and a 
         uglifycss: { enabled: true, maxLineLen: 120 },
         uglifyjs: { enabled: true, compress: false, mangle: false, output: { beautify: true } }
     };
-    const lazy = electricity.static(directory, { ...structuredClone(options), warmup: { enabled: false } });
+    const lazy = electricity.static(directory, { ...structuredClone(options), warmup: false });
     const warmed = electricity.static(directory, structuredClone(options));
     const assetPaths = ['/main.css', '/main.js', '/large.txt'];
 
@@ -234,7 +234,7 @@ test('JSX remains a standalone script with spread props in development and produ
         let expected;
         for (const envName of ['development', 'production']) {
             const options = { hashify: false, babel: { envName }, uglifyjs: { enabled } };
-            const lazy = electricity.static(directory, { ...structuredClone(options), warmup: { enabled: false } });
+            const lazy = electricity.static(directory, { ...structuredClone(options), warmup: false });
             const warmed = electricity.static(directory, structuredClone(options));
             const response = request(lazy, '/main.js');
             assert.equal(response.headers['content-type'], 'text/javascript');
@@ -263,7 +263,7 @@ test('Unicode JavaScript uses UTF-8 byte lengths for plain responses and gzip el
         'main.js': `globalThis.message = "${'é'.repeat(800)}";`
     });
     const options = { hashify: false, uglifyjs: { enabled: false } };
-    const lazy = electricity.static(directory, { ...structuredClone(options), warmup: { enabled: false } });
+    const lazy = electricity.static(directory, { ...structuredClone(options), warmup: false });
     const warmed = electricity.static(directory, structuredClone(options));
     const plain = request(lazy, '/main.js');
     const compressed = request(lazy, '/main.js', { 'accept-encoding': 'gzip' });
@@ -327,7 +327,7 @@ test('an individual compilation failure rejects warmup after other assets have b
         'z-healthy.scss': 'body { color: green; }',
         'z-healthy.txt': 'still available'
     });
-    const middleware = electricity.static(directory, { hashify: false, warmup: { enabled: false } });
+    const middleware = electricity.static(directory, { hashify: false, warmup: false });
     const pending = middleware.warmup();
 
     await assert.rejects(pending, error => {
@@ -346,7 +346,7 @@ test('an individual compilation failure rejects warmup after other assets have b
 
 test('warmup rejects when its root directory does not exist', async t => {
     const { directory } = fixture(t, {});
-    const middleware = electricity.static(path.join(directory, 'missing'), { warmup: { enabled: false } });
+    const middleware = electricity.static(path.join(directory, 'missing'), { warmup: false });
     const pending = middleware.warmup();
 
     await assert.rejects(pending, error => {
@@ -363,7 +363,7 @@ test('opting out avoids automatic clone errors while manual warming still reject
     const warnings = t.mock.method(console, 'warn', () => {});
     const middleware = electricity.static(directory, {
         hashify: false,
-        warmup: { enabled: false },
+        warmup: false,
         babel: {
             plugins: [() => ({
                 visitor: {
@@ -423,7 +423,7 @@ module.exports = () => {
 `);
         const middleware = electricity.static(directory, {
             babel: { plugins: [plugin] },
-            warmup: { enabled: false }
+            warmup: false
         });
         await assert.rejects(middleware.warmup(), failure.expected);
     }

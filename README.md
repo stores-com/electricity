@@ -58,7 +58,7 @@ To disable automatic warming and build assets only as they are requested:
 
 ```javascript
 app.use(electricity.static('public', {
-    warmup: { enabled: false }
+    warmup: false
 }));
 ```
 
@@ -98,7 +98,7 @@ Electricity comes with a variety of features to help make your web pages fast wi
 - **HTTP Headers:** Electricity sets proper `Cache-Control`, `ETag`, and `Expires`, headers to help avoid unnecessary HTTP requests on subsequent page views.
 - **Minification of JavaScript and CSS:** Electricity minifies JavaScript and CSS files in order to improve response time by reducing file sizes.
 - **Gzip:** Electricity gzips many content types (CSS, HTML, JavaScript, JSON, plaintext, XML) to reduce response sizes.
-- **Background Cache Warming:** Electricity builds and caches assets on a worker thread by default. Disable it with `warmup: { enabled: false }`; watch mode skips it automatically.
+- **Background Cache Warming:** Electricity builds and caches assets on a worker thread by default. Disable it with `warmup: false`; watch mode skips it automatically.
 - **Snockets:** Electricity supports Snockets (A JavaScript concatenation tool for Node.js inspired by Sprockets). You can use Snockets to combine multiple JavaScript files into a single JavaScript file which helps minimize HTTP requests.
 - **Sass:** Electricity supports Sass (Sassy CSS). Among other features, Sass can be used to combine multiple CSS files into a single CSS file which helps minimize HTTP requests. NOTE: We currently only support .scss files (not .sass files written in the older syntax).
 - **React JSX:** Electricity transforms JSX using [Babel 8](https://babeljs.io/docs/) with the classic React runtime and development output disabled. Generated scripts use the global `React` object. Custom Babel plugins and options must support Babel 8.
@@ -123,9 +123,7 @@ const options = {
     uglifycss: {
         enabled: true
     },
-    warmup: {
-        enabled: true
-    },
+    warmup: true,
     watch: {
         enabled: false
     }
@@ -161,9 +159,7 @@ var options = {
     uglifycss: { // Object passed straight to uglifycss options: https://github.com/fmarcia/uglifycss
         enabled: false // Do not minify CSS
     },
-    warmup: {
-        enabled: false // Build assets only when requested
-    }
+    warmup: false // Build assets only when requested
 };
 ```
 

@@ -43,33 +43,33 @@ function request(middleware, urlPath, options = {}) {
 // Exercise lazy requests here; automatic warming is covered in warmup.js.
 test('electricity.static', { concurrency: true }, async (t) => {
     await t.test('should default to "public" if a directory isn\'t specified', () => {
-        const middleware = electricity.static(undefined, { warmup: { enabled: false } });
+        const middleware = electricity.static(undefined, { warmup: false });
         const response = request(middleware, '/robots.txt');
         assert.strictEqual(response.next, true);
         assert.ifError(response.error);
     });
 
     await t.test('should return a function', () => {
-        const middleware = electricity.static('test/public', { warmup: { enabled: false } });
+        const middleware = electricity.static('test/public', { warmup: false });
         assert.strictEqual(typeof middleware, 'function');
     });
 
     await t.test('should call next middleware when the specified file can not be found', () => {
-        const middleware = electricity.static('test/public', { warmup: { enabled: false } });
+        const middleware = electricity.static('test/public', { warmup: false });
         const response = request(middleware, '/not-found.txt');
         assert.strictEqual(response.next, true);
         assert.ifError(response.error);
     });
 
     await t.test('should call next middleware when the specified URL is a directory', () => {
-        const middleware = electricity.static('test/public', { warmup: { enabled: false } });
+        const middleware = electricity.static('test/public', { warmup: false });
         const response = request(middleware, '/scripts');
         assert.strictEqual(response.next, true);
         assert.ifError(response.error);
     });
 
     await t.test('should call next middleware with an error if the specified URL is too long', () => {
-        const middleware = electricity.static('test/public', { warmup: { enabled: false } });
+        const middleware = electricity.static('test/public', { warmup: false });
         const response = request(middleware, crypto.randomBytes(256).toString('hex'));
         assert.strictEqual(response.next, true);
         assert(response.error);
@@ -79,7 +79,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
         await t.test('preset-react', { concurrency: true }, async (t) => {
             await t.test('should transform JSX files', () => {
                 const middleware = electricity.static('test/public', {
-                    warmup: { enabled: false },
+                    warmup: false,
                     babel: {},
                     uglifyjs: { enabled: false }
                 });
@@ -93,7 +93,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
                 t.mock.method(console, 'warn', () => {});
 
                 await t.test('should return file without transformation on an error', async () => {
-                    const middleware = electricity.static('test/public', { warmup: { enabled: false } });
+                    const middleware = electricity.static('test/public', { warmup: false });
                     const response = request(middleware, '/scripts/babel/invalid-50c332596d0947cd2cc8d126317bbbde753182d2.js');
                     const expected = await fs.readFile('test/public/scripts/babel/invalid.js', 'utf8');
                     assert.strictEqual(response.body, expected);
@@ -105,7 +105,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
     await t.test('css', { concurrency: true }, async (t) => {
         await t.test('should read .css files direcly from disk', async () => {
             const middleware = electricity.static('test/public', {
-                warmup: { enabled: false },
+                warmup: false,
                 uglifycss: { enabled: false }
             });
             const redirect = request(middleware, '/styles/css/test.css');
@@ -116,7 +116,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
 
         await t.test('should call next middleware with an error if the specified URL is too long', () => {
-            const middleware = electricity.static('test/public', { warmup: { enabled: false } });
+            const middleware = electricity.static('test/public', { warmup: false });
             const response = request(middleware, `${crypto.randomBytes(256).toString('hex')}.css`);
             assert.strictEqual(response.next, true);
             assert(response.error);
@@ -124,7 +124,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
         await t.test('should update URLs', async () => {
             const middleware = electricity.static('test/public', {
-                warmup: { enabled: false },
+                warmup: false,
                 uglifycss: { enabled: false }
             });
             const redirect = request(middleware, '/styles/urls/urls.css');
@@ -136,7 +136,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
         await t.test('should update URLs and use a CDN', async () => {
             const middleware = electricity.static('test/public', {
-                warmup: { enabled: false },
+                warmup: false,
                 hostname: 'cdn.example.com',
                 uglifycss: { enabled: false }
             });
@@ -148,7 +148,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
 
         await t.test('should call next middleware when the specified file can not be found', () => {
-            const middleware = electricity.static('test/public', { warmup: { enabled: false } });
+            const middleware = electricity.static('test/public', { warmup: false });
             const response = request(middleware, '/not-found.css');
             assert.strictEqual(response.next, true);
             assert.ifError(response.error);
@@ -157,7 +157,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
     await t.test('gzip', { concurrency: true }, async (t) => {
         await t.test('should gzip TXT files for clients that accept gzip', () => {
-            const middleware = electricity.static('test/public', { warmup: { enabled: false } });
+            const middleware = electricity.static('test/public', { warmup: false });
             const response = request(middleware, '/lorem-ipsum-1866425c51a663f0e9c1b8214c2ba186f6c827e4.txt', {
                 headers: { 'accept-encoding': 'gzip, deflate' }
             });
@@ -166,14 +166,14 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
 
         await t.test('should not gzip TXT files for clients that do not accept gzip', () => {
-            const middleware = electricity.static('test/public', { warmup: { enabled: false } });
+            const middleware = electricity.static('test/public', { warmup: false });
             const response = request(middleware, '/lorem-ipsum-1866425c51a663f0e9c1b8214c2ba186f6c827e4.txt');
             assert.strictEqual(response.headers['content-encoding'], undefined);
             assert(Buffer.isBuffer(response.body));
         });
 
         await t.test('should not gzip PNG files', () => {
-            const middleware = electricity.static('test/public', { warmup: { enabled: false } });
+            const middleware = electricity.static('test/public', { warmup: false });
             const response = request(middleware, '/apple-touch-icon-precomposed-217316d510b3122f64bd75f2dc0dcdba6c4786d5.png');
             assert.strictEqual(response.headers['content-encoding'], undefined);
             assert(Buffer.isBuffer(response.body));
@@ -181,7 +181,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
         await t.test('should not gzip when disabled', () => {
             const middleware = electricity.static('test/public', {
-                warmup: { enabled: false },
+                warmup: false,
                 gzip: { enabled: false }
             });
             const response = request(middleware, '/lorem-ipsum-1866425c51a663f0e9c1b8214c2ba186f6c827e4.txt', {
@@ -194,7 +194,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
     await t.test('hashify', { concurrency: true }, async (t) => {
         await t.test('should hashify by default', async () => {
-            const middleware = electricity.static('test/public', { warmup: { enabled: false } });
+            const middleware = electricity.static('test/public', { warmup: false });
             const redirect = request(middleware, '/robots.txt');
             assert.strictEqual(redirect.redirect, '/robots-423251d722a53966eb9368c65bfd14b39649105d.txt');
             const response = request(middleware, redirect.redirect);
@@ -203,7 +203,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
 
         await t.test('should not hashify if disabled', async () => {
-            const middleware = electricity.static('test/public', { warmup: { enabled: false }, hashify: false });
+            const middleware = electricity.static('test/public', { warmup: false, hashify: false });
             const response = request(middleware, '/robots.txt');
             assert.strictEqual(response.redirect, undefined);
             const expected = await fs.readFile('test/public/robots.txt');
@@ -211,13 +211,13 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
 
         await t.test('should not hashify if enabled', () => {
-            const middleware = electricity.static('test/public', { warmup: { enabled: false }, hashify: true });
+            const middleware = electricity.static('test/public', { warmup: false, hashify: true });
             const response = request(middleware, '/robots.txt');
             assert.strictEqual(response.redirect, '/robots-423251d722a53966eb9368c65bfd14b39649105d.txt');
         });
 
         await t.test('should hashify files without extensions', () => {
-            const middleware = electricity.static('test/public', { warmup: { enabled: false } });
+            const middleware = electricity.static('test/public', { warmup: false });
             const response = request(middleware, '/no-extension');
             assert.strictEqual(response.redirect, '/no-extension-2aae6c35c94fcfb415dbe95f408b9ce91ee846ed');
         });
@@ -226,7 +226,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
     await t.test('HTTP headers', { concurrency: true }, async (t) => {
         await t.test('should allow additional HTTP headers', () => {
             const middleware = electricity.static('test/public', {
-                warmup: { enabled: false },
+                warmup: false,
                 headers: { 'access-control-allow-origin': 'https://example.com' }
             });
             const response = request(middleware, '/robots-423251d722a53966eb9368c65bfd14b39649105d.txt');
@@ -234,7 +234,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
 
         await t.test('should return a 304 for a valid if-none-match header', () => {
-            const middleware = electricity.static('test/public', { warmup: { enabled: false } });
+            const middleware = electricity.static('test/public', { warmup: false });
             const response = request(middleware, '/robots-423251d722a53966eb9368c65bfd14b39649105d.txt', {
                 headers: { 'if-none-match': '"423251d722a53966eb9368c65bfd14b39649105d"' }
             });
@@ -243,7 +243,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
 
         await t.test('should return etag header for invalid if-none-match header', () => {
-            const middleware = electricity.static('test/public', { warmup: { enabled: false } });
+            const middleware = electricity.static('test/public', { warmup: false });
             const response = request(middleware, '/robots-423251d722a53966eb9368c65bfd14b39649105d.txt', {
                 headers: { 'if-none-match': '"invalid"' }
             });
@@ -255,14 +255,14 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
     await t.test('HTTP methods', { concurrency: true }, async (t) => {
         await t.test('should handle HEAD requests', () => {
-            const middleware = electricity.static('test/public', { warmup: { enabled: false } });
+            const middleware = electricity.static('test/public', { warmup: false });
             const response = request(middleware, '/robots-423251d722a53966eb9368c65bfd14b39649105d.txt', { method: 'HEAD' });
             assert.strictEqual(response.status, 200);
             assert.strictEqual(response.body, undefined);
         });
 
         await t.test('should not handle POST requests', () => {
-            const middleware = electricity.static('test/public', { warmup: { enabled: false } });
+            const middleware = electricity.static('test/public', { warmup: false });
             const response = request(middleware, '/robots.txt', { method: 'POST' });
             assert.strictEqual(response.next, true);
             assert.ifError(response.error);
@@ -271,7 +271,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
     await t.test('locals', { concurrency: true }, async (t) => {
         await t.test('should register a helper function to generate URLs', () => {
-            const middleware = electricity.static('test/public', { warmup: { enabled: false } });
+            const middleware = electricity.static('test/public', { warmup: false });
             const app = { locals: {} };
             const response = request(middleware, '/robots-423251d722a53966eb9368c65bfd14b39649105d.txt', { app });
             assert(Buffer.isBuffer(response.body));
@@ -279,7 +279,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
 
         await t.test('should return a hashified URL for a file that was previously requested', () => {
-            const middleware = electricity.static('test/public', { warmup: { enabled: false } });
+            const middleware = electricity.static('test/public', { warmup: false });
             const app = { locals: {} };
             const response = request(middleware, '/robots-423251d722a53966eb9368c65bfd14b39649105d.txt', { app });
             assert(Buffer.isBuffer(response.body));
@@ -287,7 +287,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
 
         await t.test('should return original URL path when hashify is disabled', () => {
-            const middleware = electricity.static('test/public', { warmup: { enabled: false }, hashify: false });
+            const middleware = electricity.static('test/public', { warmup: false, hashify: false });
             const app = { locals: {} };
             const response = request(middleware, '/robots.txt', { app });
             assert(Buffer.isBuffer(response.body));
@@ -295,7 +295,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
 
         await t.test('should return original URL path when the file could not be found', () => {
-            const middleware = electricity.static('test/public', { warmup: { enabled: false } });
+            const middleware = electricity.static('test/public', { warmup: false });
             const app = { locals: {} };
             const response = request(middleware, '/not-found.txt', { app });
             assert.strictEqual(response.next, true);
@@ -304,7 +304,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
         });
 
         await t.test('should return an absolute URL when the hostname option is specified', () => {
-            const middleware = electricity.static('test/public', { warmup: { enabled: false }, hostname: 'cdn.example.com' });
+            const middleware = electricity.static('test/public', { warmup: false, hostname: 'cdn.example.com' });
             const app = { locals: {} };
             const response = request(middleware, '/robots-423251d722a53966eb9368c65bfd14b39649105d.txt', { app });
             assert(Buffer.isBuffer(response.body));
@@ -315,7 +315,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
     await t.test('sass', async (t) => {
         await t.test('should read .scss files', async () => {
             const middleware = electricity.static('test/public', {
-                warmup: { enabled: false },
+                warmup: false,
                 sass: {},
                 uglifycss: { enabled: false }
             });
@@ -330,7 +330,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
     await t.test('snockets', { concurrency: true }, async (t) => {
         await t.test('should concatenate files', async () => {
             const middleware = electricity.static('test/public', {
-                warmup: { enabled: false },
+                warmup: false,
                 snockets: { async: true },
                 uglifyjs: { enabled: false }
             });
@@ -355,7 +355,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
 
             await t.test('should call next middleware with an error if the specified URL is too long', () => {
-                const middleware = electricity.static('test/public', { warmup: { enabled: false } });
+                const middleware = electricity.static('test/public', { warmup: false });
                 const response = request(middleware, `${crypto.randomBytes(256).toString('hex')}.js`);
                 assert.strictEqual(response.next, true);
                 assert(response.error);
@@ -365,7 +365,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
     await t.test('uglifycss', async (t) => {
         await t.test('should uglify files', async () => {
-            const middleware = electricity.static('test/public', { warmup: { enabled: false } });
+            const middleware = electricity.static('test/public', { warmup: false });
             const redirect = request(middleware, '/styles/uglifycss/test.css');
             assert.strictEqual(redirect.redirect, '/styles/uglifycss/test-c08394f9bdad595e2e3a7c5e7851b41bd153204f.css');
             const response = request(middleware, redirect.redirect);
@@ -376,7 +376,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
     await t.test('uglifyjs', async (t) => {
         await t.test('should uglify files', async () => {
-            const middleware = electricity.static('test/public', { warmup: { enabled: false } });
+            const middleware = electricity.static('test/public', { warmup: false });
             const redirect = request(middleware, '/scripts/uglifyjs/test.js');
             assert.strictEqual(redirect.redirect, '/scripts/uglifyjs/test-bd0e73d5c4845f2f4c39219ae7e4248d122f0c5c.js');
             const response = request(middleware, redirect.redirect);
