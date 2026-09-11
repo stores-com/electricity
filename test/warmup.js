@@ -90,7 +90,7 @@ test('warmup populates the serving cache with compiled assets, hashes, binary da
         'large.txt': text
     });
     const middleware = electricity.static(directory, {
-        headers: { 'x-custom': { toString() { return 'kept in the parent'; } } }
+        headers: { 'x-custom': 'custom response header' }
     });
     assert.equal(typeof middleware, 'function');
 
@@ -109,7 +109,7 @@ test('warmup populates the serving cache with compiled assets, hashes, binary da
         assert.equal(request(middleware, '/styles/main.css').redirect, cssUrl);
         assert.match(css.body, /color:#123456/);
         assert.ok(css.body.includes(url('/pixel.png')));
-        assert.equal(css.headers['x-custom'], 'kept in the parent');
+        assert.equal(css.headers['x-custom'], 'custom response header');
 
         const js = request(middleware, url('/scripts/main.js'));
         assert.match(js.body, /React\.createElement/);
@@ -378,6 +378,25 @@ test('opting out avoids automatic clone errors while manual warming still reject
     assert.match(request(middleware, '/main.js').body, /globalThis\.answer=2/);
     await assert.rejects(middleware.warmup(), /clone|serializ/i);
     assert.equal(warnings.mock.callCount(), 0);
+});
+
+test('automatic warming rejects uncloneable headers while lazy serving remains usable', { timeout: 15000 }, async t => {
+    const { directory } = fixture(t, { 'main.scss': 'body { color: green; }' });
+    const warned = Promise.withResolvers();
+    const warnings = t.mock.method(console, 'warn', (...args) => warned.resolve(args));
+    const middleware = electricity.static(directory, {
+        hashify: false,
+        headers: { 'x-custom': { toString() { return 'lazy response header'; } } }
+    });
+
+    const [message, error] = await warned.promise;
+    assert.match(message, /cache warming failed/i);
+    assert.match(error.message, /clone|serializ/i);
+    await assert.rejects(middleware.warmup(), received => received === error);
+    const response = request(middleware, '/main.css');
+    assert.equal(response.body, 'body{color:green}');
+    assert.equal(response.headers['x-custom'], 'lazy response header');
+    assert.equal(warnings.mock.callCount(), 1);
 });
 
 test('watch mode skips automatic warming and still rejects manual warming', async t => {
