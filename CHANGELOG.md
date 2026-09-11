@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Opt-in background cache warming with `middleware.warmup()` using a worker thread.
+
+### Changed
+- Bump Electricity to 4.0.0 and require Node.js 24.11.0 or newer.
+- Upgrade to Babel 8, Chokidar 5, MIME 4.1, and Negotiator 1.1. Custom Babel plugins and options must support Babel 8; generated scripts continue to use the classic React runtime.
+- Serve JavaScript with the `text/javascript` content type.
+
+### Fixed
+- Use UTF-8 byte lengths for response headers and gzip eligibility, including Unicode JavaScript output.
+
 ## [3.6.1] - 2025-01-21
 ### Changed
 - Use `module: false` option to uglify-js. Version 3.18.0+ assume ES6 modules.
