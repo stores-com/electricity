@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const workerThreads = require('node:worker_threads');
+const zlib = require('node:zlib');
 
 const electricity = require('../lib/index');
 
@@ -30,11 +31,12 @@ function directory(t, assets) {
  * Sends a request through the middleware and returns the response it produced.
  * @param {Function} middleware
  * @param {string} urlPath
+ * @param {Object} [headers] Request headers.
  */
-function request(middleware, urlPath) {
+function request(middleware, urlPath, headers = {}) {
     const response = {};
 
-    middleware({ get: () => {}, method: 'GET', path: urlPath }, {
+    middleware({ get: name => headers[name], headers, method: 'GET', path: urlPath }, {
         redirect: url => { response.redirect = url; },
         send: content => { response.content = content; },
         sendStatus: status => { response.status = status; },
@@ -142,6 +144,23 @@ test('warmup', async (t) => {
                 assert.strictEqual(request(warmed, urlPath).redirect, expected.redirect);
             });
         }
+    });
+
+    t.test('should serve warmed content to clients that accept gzip', async (t) => {
+        const text = 'Electricity gzips large text responses.\n'.repeat(100);
+        const root = directory(t, { 'large.txt': text });
+        const worker = warmup(t);
+        const middleware = electricity.static(root, { hashify: false });
+
+        await worker.finished();
+
+        withoutReads(t, root, () => {
+            const compressed = request(middleware, '/large.txt', { 'accept-encoding': 'gzip' });
+
+            assert.ok(Buffer.isBuffer(compressed.content));
+            assert.strictEqual(zlib.gunzipSync(compressed.content).toString(), text);
+            assert.strictEqual(request(middleware, '/large.txt').content.toString(), text);
+        });
     });
 
     t.test('should not start a worker when disabled', async (t) => {
