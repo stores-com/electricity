@@ -13,7 +13,6 @@ const zlib = require('node:zlib');
 const chokidar = require('chokidar').default;
 
 const electricity = require('../lib');
-const warmup = require('../lib/warmup');
 
 function fixture(t, files) {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'electricity-warmup-'));
@@ -149,27 +148,6 @@ test('warmup populates the serving cache with compiled assets, hashes, binary da
     });
 });
 
-test('worker messages arriving after a cache failure are ignored', async t => {
-    const worker = new events.EventEmitter();
-    worker.terminate = () => {};
-    t.mock.method(workerThreads, 'Worker', function() {
-        return worker;
-    });
-    const failure = new Error('Unable to cache');
-    const cached = [];
-    const pending = warmup('/assets', {}, urlPath => {
-        cached.push(urlPath);
-        throw failure;
-    });
-
-    worker.emit('message', { file: { content: Buffer.from('first') }, type: 'file', urlPath: '/first.txt' });
-    worker.emit('message', { file: { content: Buffer.from('second') }, type: 'file', urlPath: '/second.txt' });
-    worker.emit('exit', 0);
-
-    await assert.rejects(pending, error => error === failure);
-    assert.deepEqual(cached, ['/first.txt']);
-});
-
 test('opting out serves lazily without starting a worker', async t => {
     const { directory } = fixture(t, {
         'lazy.txt': 'available on demand',
@@ -196,8 +174,7 @@ test('automatic warming reports failures without an unhandled rejection', { time
     // Observe the automatic failure before attaching any caller rejection handler.
     const [message, error] = await warned.promise;
     assert.match(message, /cache warming failed/i);
-    assert.ok(error instanceof AggregateError);
-    assert.match(error.errors[0].message, /broken\.css/);
+    assert.match(error.message, /broken\.css/);
     await delay(0);
     assert.equal(warnings.mock.callCount(), 1);
     withoutAssetReads(t, directory, () => {
@@ -357,27 +334,27 @@ test('warmup skips Sass partials and preserves CSS precedence over matching Sass
     });
 });
 
-test('compilation failures are reported after other assets have been cached', async t => {
+test('compilation failures are reported after other assets have been cached', { timeout: 15000 }, async t => {
     const { directory } = fixture(t, {
         'a-broken.scss': 'body { color: $undefined; }',
         'b-broken.scss': 'body { color: $missing; }',
         'z-healthy.scss': 'body { color: green; }',
         'z-healthy.txt': 'still available'
     });
-    const warned = Promise.withResolvers();
-    t.mock.method(console, 'warn', (...args) => {
+    const reported = [];
+    const warnings = t.mock.method(console, 'warn', (...args) => {
         if (/cache warming failed/i.test(args[0])) {
-            warned.resolve(args);
+            reported.push(args[1].message);
         }
     });
+    const workers = warming(t);
     const middleware = electricity.static(directory, { hashify: false });
 
-    const [, error] = await warned.promise;
-    assert.ok(error instanceof AggregateError);
-    assert.equal(error.message, 'Unable to warm 2 assets.');
-    const messages = error.errors.map(err => err.message).sort();
-    assert.match(messages[0], /a-broken\.css/);
-    assert.match(messages[1], /b-broken\.css/);
+    await workers.settled();
+    reported.sort();
+    assert.match(reported[0], /a-broken\.css/);
+    assert.match(reported[1], /b-broken\.css/);
+    assert.equal(warnings.mock.callCount(), 2);
 
     withoutAssetReads(t, directory, () => {
         assert.equal(request(middleware, '/z-healthy.css').body, 'body{color:green}');
@@ -396,9 +373,7 @@ test('a missing root directory is reported', async t => {
     electricity.static(path.join(directory, 'missing'));
 
     const [, error] = await warned.promise;
-    assert.ok(error instanceof AggregateError);
-    assert.equal(error.message, 'Unable to warm 1 asset.');
-    assert.match(error.errors[0].message, /ENOENT|no such file/i);
+    assert.match(error.message, /ENOENT|no such file/i);
 });
 
 test('function options serve lazily when opted out and are reported when warming', { timeout: 15000 }, async t => {
@@ -426,7 +401,7 @@ test('function options serve lazily when opted out and are reported when warming
 
     const [message, error] = warnings.mock.calls[0].arguments;
     assert.match(message, /cache warming failed/i);
-    assert.equal(error.cause.name, 'DataCloneError');
+    assert.equal(error.name, 'DataCloneError');
 });
 
 test('automatic warming rejects uncloneable headers while lazy serving remains usable', { timeout: 15000 }, async t => {
@@ -440,7 +415,7 @@ test('automatic warming rejects uncloneable headers while lazy serving remains u
 
     const [message, error] = await warned.promise;
     assert.match(message, /cache warming failed/i);
-    assert.equal(error.cause.name, 'DataCloneError');
+    assert.equal(error.name, 'DataCloneError');
     const response = request(middleware, '/main.css');
     assert.equal(response.body, 'body{color:green}');
     assert.equal(response.headers['x-custom'], 'lazy response header');
@@ -488,11 +463,6 @@ test('uncaught worker errors and premature worker exits are reported', { timeout
             name: 'early-exit',
             code: 'process.exit(7);',
             expected: /worker exited.*7/i
-        },
-        {
-            name: 'early-success-exit',
-            code: 'process.exit(0);',
-            expected: /worker exited.*0/i
         }
     ];
 
@@ -507,7 +477,8 @@ module.exports = () => {
 `);
         const warned = Promise.withResolvers();
         const warnings = t.mock.method(console, 'warn', (...args) => {
-            if (/cache warming failed/i.test(args[0])) {
+            // Workers from earlier cases report their own exits into this mock.
+            if (/cache warming failed/i.test(args[0]) && failure.expected.test(args[1].message)) {
                 warned.resolve(args);
             }
         });

@@ -50,9 +50,9 @@ npx eslint lib/index.js
 - `hashify()` and `parse()` are stateless rules for adding and stripping content hashes
 - Owns the Snockets instance; the middleware and the warmup worker each create their own cache
 
-**Warmup (`lib/warmup.js` and `lib/worker.js`)**
-- `warmup()` starts one worker thread running `worker.js`, which walks the public directory, processes every asset, and posts each file record back
-- Failures are reported with `console.warn`: an `AggregateError` when individual assets fail, or an `Error` when the worker fails to start or exits early
+**Warmup (`lib/worker.js`)**
+- `static()` starts one worker thread running `worker.js`, which walks the public directory, processes every asset, and posts each file record back for `cache.add()`
+- The worker posts `{ file, urlPath }` for each asset and `{ error }` for each failure; every failure is reported with `console.warn` and serving continues
 
 **File Processing Pipeline**
 1. Request comes in → middleware checks if it's a GET/HEAD request

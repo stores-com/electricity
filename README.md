@@ -64,7 +64,7 @@ Warming and watching are independent. The watcher uses dependency paths from pro
 
 The complete options object is copied into the worker using [structured cloning](https://nodejs.org/download/release/v24.11.0/docs/api/worker_threads.html#new-workerfilename-options). Use data that Node can copy, such as strings, numbers, arrays, plain data objects, and regular expressions. Functions cannot be copied, including inline Babel plugins, Sass importer callbacks, or methods on header values. Babel plugins can be specified by module path instead. Set `warmup: false` if your options require functions. Unsupported options end warming without changing normal lazy serving.
 
-If an asset fails to build, warming continues for the remaining files and then reports an `AggregateError` with `console.warn`; its `errors` array identifies the failed paths. Successfully warmed files remain cached. Compiler warnings and fallback behavior are the same as during a normal request. Worker startup failures and unexpected exits are reported the same way. Normal serving continues in every case.
+If an asset fails to build, warming continues for the remaining files and reports each failure with `console.warn`, naming the path it could not warm. Successfully warmed files remain cached. Compiler warnings and fallback behavior are the same as during a normal request. Worker startup failures and unexpected exits are reported the same way. Normal serving continues in every case.
 
 ## View Helper
 

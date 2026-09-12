@@ -86,7 +86,7 @@ test('watch startup automatically starts one warmup worker', { timeout: 15000 },
     assert.equal(responseBody(middleware, '/main.txt'), 'warmed at startup');
 });
 
-test('a cache callback failure is reported and keeps later worker results out of the cache', { timeout: 15000 }, async t => {
+test('a cache callback failure is reported without stopping warming', { timeout: 15000 }, async t => {
     const watcher = new events.EventEmitter();
     watcher.close = async () => {};
     const assets = fixture(t, {
@@ -96,9 +96,7 @@ test('a cache callback failure is reported and keeps later worker results out of
     }, () => watcher);
     const failure = new Error('Watch registration failed');
     let shouldThrow = true;
-    let registrations = 0;
     watcher.add = () => {
-        registrations++;
         if (shouldThrow) throw failure;
         return watcher;
     };
@@ -114,9 +112,7 @@ test('a cache callback failure is reported and keeps later worker results out of
     assert.equal(error, failure);
     shouldThrow = false;
     await warmed;
-    assert.equal(registrations, 1, 'later worker messages do not invoke the cache callback');
-    fs.writeFileSync(path.join(assets.directory, 'later.txt'), 'built lazily after failure');
-    assert.equal(responseBody(middleware, '/later.txt'), 'built lazily after failure');
+    assert.equal(responseBody(middleware, '/later.txt'), 'later worker result');
 });
 
 test('worker-warmed JavaScript parents and Sass @use parents invalidate on watched changes', { timeout: 15000 }, async t => {
