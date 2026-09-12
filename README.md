@@ -62,7 +62,17 @@ app.use(electricity.static('public', {
 }));
 ```
 
-You can still call `warmup()` manually when automatic warming is disabled. Warming is intended for assets that stay unchanged for the lifetime of the process. When `watch.enabled` is true, automatic warming is skipped so development keeps its existing lazy compilation and dependency tracking. Calling `warmup()` manually in watch mode rejects.
+You can still call `warmup()` manually when automatic warming is disabled. Warmup works both with and without watch mode:
+
+```javascript
+app.use(electricity.static('public', {
+    watch: { enabled: true }
+}));
+```
+
+With watch enabled, startup warming waits for the initial watches to be ready. The watcher uses dependency paths from processed files to invalidate affected JavaScript and Sass bundles, including Sass `@use` and `@forward` imports. If a watched file changes during warming, remaining results from that pass are discarded so they cannot restore outdated cache entries. The worker finishes and `warmup()` settles; file errors from the abandoned pass are ignored. Changes after startup continue to rebuild lazily on the next request. Warming does not restart after each edit.
+
+An import first discovered outside the initial watch coverage is registered with the watcher, but ends cache updates from that warming pass. The remaining assets are built on request, avoiding the gap before the new watch is established. This restriction only applies with watch enabled; ordinary warmup still builds assets with external imports.
 
 The complete options object is copied into the worker using [structured cloning](https://nodejs.org/download/release/v24.11.0/docs/api/worker_threads.html#new-workerfilename-options). Use data that Node can copy, such as strings, numbers, arrays, plain data objects, and regular expressions. Functions cannot be copied, including inline Babel plugins, Sass importer callbacks, or methods on header values. Babel plugins can be specified by module path instead. Set `warmup: false` if your options require functions. Unsupported options reject warming without changing normal lazy serving; no options are silently removed.
 
@@ -98,7 +108,7 @@ Electricity comes with a variety of features to help make your web pages fast wi
 - **HTTP Headers:** Electricity sets proper `Cache-Control`, `ETag`, and `Expires`, headers to help avoid unnecessary HTTP requests on subsequent page views.
 - **Minification of JavaScript and CSS:** Electricity minifies JavaScript and CSS files in order to improve response time by reducing file sizes.
 - **Gzip:** Electricity gzips many content types (CSS, HTML, JavaScript, JSON, plaintext, XML) to reduce response sizes.
-- **Background Cache Warming:** Electricity builds and caches assets on a worker thread by default. Disable it with `warmup: false`; watch mode skips it automatically.
+- **Background Cache Warming:** Electricity builds and caches assets on a worker thread by default, with or without watch mode. Disable it with `warmup: false`.
 - **Snockets:** Electricity supports Snockets (A JavaScript concatenation tool for Node.js inspired by Sprockets). You can use Snockets to combine multiple JavaScript files into a single JavaScript file which helps minimize HTTP requests.
 - **Sass:** Electricity supports Sass (Sassy CSS). Among other features, Sass can be used to combine multiple CSS files into a single CSS file which helps minimize HTTP requests. NOTE: We currently only support .scss files (not .sass files written in the older syntax).
 - **React JSX:** Electricity transforms JSX using [Babel 8](https://babeljs.io/docs/) with the classic React runtime and development output disabled. Generated scripts use the global `React` object. Custom Babel plugins and options must support Babel 8.

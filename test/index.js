@@ -347,6 +347,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             await t.test('should return file without concatenation on an error', async () => {
                 const middleware = electricity.static('test/public', {
                     uglifyjs: { enabled: false },
+                    warmup: false,
                     watch: { enabled: true }
                 });
                 const response = request(middleware, '/scripts/snockets/invalid-71f16629fe6cf3e982d38e87ab81c421e4956c8d.js');
@@ -394,6 +395,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
         await t.test('should watch for file changes', { timeout: 3000 }, async () => {
             const middleware = electricity.static('test/public', {
+                warmup: false,
                 watch: { enabled: true }
             });
 
@@ -417,6 +419,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
         await t.test('should watch for CSS file changes', { timeout: 3000 }, async () => {
             const middleware = electricity.static('test/public', {
                 uglifyjs: { enabled: false },
+                warmup: false,
                 watch: { enabled: true }
             });
 
@@ -442,6 +445,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
         await t.test('should handle CSS file deletions', { timeout: 3000 }, async () => {
             const middleware = electricity.static('test/public', {
                 uglifyjs: { enabled: false },
+                warmup: false,
                 watch: { enabled: true }
             });
 
@@ -464,6 +468,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
         await t.test('should watch for JavaScript file changes', { timeout: 3000 }, async () => {
             const middleware = electricity.static('test/public', {
                 uglifyjs: { enabled: false },
+                warmup: false,
                 watch: { enabled: true }
             });
 

@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
+const events = require('node:events');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -402,16 +403,32 @@ test('automatic warming rejects uncloneable headers while lazy serving remains u
     assert.equal(warnings.mock.callCount(), 1);
 });
 
-test('watch mode skips automatic warming and still rejects manual warming', async t => {
-    const { directory } = fixture(t, { 'main.txt': 'watched asset' });
+test('watch mode allows manual warming when automatic warming is disabled', async t => {
+    const { directory } = fixture(t, {
+        'main.txt': 'watched asset',
+        'manual.scss': 'body { color: green; }'
+    });
+    // Model existing files so delayed creation/access events are not mistaken for test edits.
+    for (const name of ['main.txt', 'manual.scss']) {
+        fs.utimesSync(path.join(directory, name), new Date(), new Date(Date.now() - 1000));
+    }
     const warnings = t.mock.method(console, 'warn', () => {});
-    t.mock.method(chokidar, 'watch', () => ({ on() { return this; }, add() { return this; } }));
-    const middleware = electricity.static(directory, { hashify: false, watch: { enabled: true } });
+    const watch = chokidar.watch;
+    let watcher;
+    t.mock.method(chokidar, 'watch', (...args) => {
+        watcher = watch(...args);
+        return watcher;
+    });
+    t.after(() => watcher.close());
+    const middleware = electricity.static(directory, { hashify: false, warmup: false, watch: { enabled: true } });
 
-    await delay(0);
+    await events.once(watcher, 'ready');
     assert.equal(warnings.mock.callCount(), 0);
     assert.equal(request(middleware, '/main.txt').body.toString(), 'watched asset');
-    await assert.rejects(middleware.warmup(), /watch/i);
+    await middleware.warmup();
+    withoutAssetReads(t, directory, () => {
+        assert.equal(request(middleware, '/manual.css').body, 'body{color:green}');
+    });
 });
 
 test('warmup rejects uncaught worker errors and premature worker exits', async t => {

@@ -7,12 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Background cache warming using a worker thread, enabled by default. Disable automatic warming with `warmup: false`, or await completion with `middleware.warmup()`. Watch mode skips automatic warming.
+- Background cache warming using a worker thread, enabled by default. Disable automatic warming with `warmup: false`, or await completion with `middleware.warmup()`. Works with or without watch mode; watched changes stop cache updates from the startup pass, and subsequent requests rebuild lazily.
 
 ### Changed
 - Bump Electricity to 4.0.0 and require Node.js 24.11.0 or newer.
 - Upgrade to Babel 8, Chokidar 5, MIME 4.1, and Negotiator 1.1. Custom Babel plugins and options must support Babel 8; generated scripts continue to use the classic React runtime.
 - Serve JavaScript with the `text/javascript` content type.
+- Use dependencies reported by the processor for watch invalidation, replacing `sass-graph` and supporting Sass `@use` and `@forward` imports.
 
 ### Fixed
 - Use UTF-8 byte lengths for response headers and gzip eligibility, including Unicode JavaScript output.
