@@ -32,7 +32,7 @@ jobs:
 
     - name: Test
       run: |
-        node --test --test-force-exit --experimental-test-coverage --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=lcov.info test/index.js
+        node --test --test-force-exit --experimental-test-coverage --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=lcov.info test/*.js
 
     - name: Upload coverage to Coveralls
       if: success()
