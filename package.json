@@ -6,7 +6,6 @@
         "mime": "~3.0.0",
         "negotiator": "~0.6.2",
         "sass": "~1.104.0",
-        "sass-graph": "~4.0.0",
         "snockets": "~1.3.8",
         "uglify-js": "~3.19.3",
         "uglifycss": "~0.0.29"
@@ -34,9 +33,9 @@
         "url": "git+https://github.com/stores-com/electricity.git"
     },
     "scripts": {
-        "coveralls": "node --test --test-force-exit --experimental-test-coverage --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=lcov.info test/index.js && coveralls < lcov.info",
-        "test": "node --test --test-force-exit --test-reporter=spec test/index.js",
-        "test:only": "node --test --test-force-exit --test-only --test-reporter=spec test/index.js"
+        "coveralls": "node --test --test-force-exit --experimental-test-coverage --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=lcov.info test/*.js && coveralls < lcov.info",
+        "test": "node --test --test-force-exit --test-reporter=spec test/*.js",
+        "test:only": "node --test --test-force-exit --test-only --test-reporter=spec test/*.js"
     },
     "version": "3.7.1"
 }

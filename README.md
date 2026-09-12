@@ -30,6 +30,22 @@ const electricity = require('electricity');
 app.use(electricity.static('public'));
 ```
 
+## Cache Warming
+
+Electricity processes your static files on a worker thread as soon as the middleware is created, so requests are served from a warm cache instead of compiling on the first request. The worker runs the same processing a request would and sends each file back to be cached. Requests are served normally while it runs, and a file it hasn't reached yet is processed on demand.
+
+A file the worker can't process is reported with `console.warn` and warming continues with the rest.
+
+To process files only when they are requested:
+
+```javascript
+app.use(electricity.static('public', {
+    warmup: false
+}));
+```
+
+The options are copied to the worker thread using [structured cloning](https://nodejs.org/api/worker_threads.html#new-workerfilename-options), so they must not contain functions, such as an inline Babel plugin or a Sass importer. Use `warmup: false` when your options need them.
+
 ## View Helper
 
 A common best practice for serving static files is to set a far future `Expires` header: http://developer.yahoo.com/performance/rules.html#expires
@@ -64,6 +80,7 @@ Electricity comes with a variety of features to help make your web pages fast wi
 - **Sass:** Electricity supports Sass (Sassy CSS). Among other features, Sass can be used to combine multiple CSS files into a single CSS file which helps minimize HTTP requests. NOTE: We currently only support .scss files (not .sass files written in the older syntax).
 - **React JSX:** Electricty transforms [React JSX](http://facebook.github.io/react/docs/jsx-in-depth.html) for you automatically using [babel-core](https://www.npmjs.com/package/babel-core) without the need for client-side translation or build steps.
 - **CDN Hostname:** If you're using a CDN (Content Delivery Network) that supports a custom origin (like Amazon CloudFront) you can specify the hostname you'd like Electricity to use when generating URLs.
+- **Cache Warming:** Electricity processes your static files on a worker thread when the middleware is created so the first request is served from cache. Disable it with `warmup: false`.
 - **Watch:** Electricity watches for changes to your static files and automatically serves the latest content without the need to restart your web server (useful during development). Electricity also understands Sass and Snockets dependency graphs to ensure the parent file contents are updated if a child file has been modified.
 
 ## Advanced Usage
@@ -83,6 +100,10 @@ const options = {
     },
     uglifycss: {
         enabled: true
+    },
+    warmup: true,
+    watch: {
+        enabled: false
     }
 };
 ```
@@ -115,7 +136,8 @@ var options = {
     },
     uglifycss: { // Object passed straight to uglifycss options: https://github.com/fmarcia/uglifycss
         enabled: false // Do not minify CSS
-    }
+    },
+    warmup: false // Process files only when they are requested
 };
 ```
 
