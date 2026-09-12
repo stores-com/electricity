@@ -34,12 +34,7 @@ app.use(electricity.static('public'));
 
 ## Background Cache Warming
 
-Electricity v4 automatically starts building assets in the background when you create the middleware:
-
-```javascript
-const assets = electricity.static('public');
-app.use(assets);
-```
+Electricity v4 automatically starts building assets in the background when you create the middleware.
 
 One Node.js worker thread scans the public directory and runs Electricity's existing compilation, hashing, and gzip pipeline. It builds assets sequentially and sends each completed asset into the serving process's cache, so compilation does not block the HTTP event loop. No additional dependencies or worker pool configuration are needed. The worker exits when the batch finishes; repeated calls to `warmup()` return the same promise.
 
@@ -47,12 +42,7 @@ The scan includes nested directories, directory symlinks, and static assets such
 
 Warming loads the public assets into memory, with an additional copy held by the worker until it exits. Account for the size of the public directory when using it with large media files.
 
-Requests and the synchronous `electricity.url()` helper continue working while warming runs. An asset requested before it is ready still uses the normal synchronous compilation path. To ensure even the first page uses a warm cache, await completion before accepting traffic:
-
-```javascript
-await assets.warmup();
-app.listen(3000);
-```
+Requests and the synchronous `electricity.url()` helper continue working while warming runs. An asset requested before it is ready uses the normal synchronous compilation path.
 
 To disable automatic warming and build assets only as they are requested:
 
@@ -76,7 +66,7 @@ An import first discovered outside the initial watch coverage is registered with
 
 The complete options object is copied into the worker using [structured cloning](https://nodejs.org/download/release/v24.11.0/docs/api/worker_threads.html#new-workerfilename-options). Use data that Node can copy, such as strings, numbers, arrays, plain data objects, and regular expressions. Functions cannot be copied, including inline Babel plugins, Sass importer callbacks, or methods on header values. Babel plugins can be specified by module path instead. Set `warmup: false` if your options require functions. Unsupported options reject warming without changing normal lazy serving; no options are silently removed.
 
-If an asset fails to build, warming continues for the remaining files and then rejects with an `AggregateError`; its `errors` array identifies the failed paths. Successfully warmed files remain cached. Compiler warnings and fallback behavior are the same as during a normal request. Worker startup failures or unexpected exits also reject the promise. Automatic warming logs failures with `console.warn` and lets normal serving continue. Calling `warmup()` returns the same promise, including its rejection, so awaiting it before `app.listen()` can prevent startup on failure. When starting warming manually, await the promise or attach a rejection handler.
+If an asset fails to build, warming continues for the remaining files and then rejects with an `AggregateError`; its `errors` array identifies the failed paths. Successfully warmed files remain cached. Compiler warnings and fallback behavior are the same as during a normal request. Worker startup failures or unexpected exits also reject the promise. Automatic warming logs failures with `console.warn` and lets normal serving continue. Calling `warmup()` returns the same promise, including its rejection. When starting warming manually, await the promise or attach a rejection handler.
 
 ## View Helper
 
