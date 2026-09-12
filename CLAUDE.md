@@ -40,20 +40,15 @@ npx eslint lib/index.js
 ### Core Components
 
 **Main Module (`lib/index.js`)**
-- Exports `static()` middleware function that owns configuration, the in-memory file cache, file watching, cache warming, and HTTP handling
-- Key functions:
-  - `fetchFile()`: Retrieves files from cache, processing them on demand
-  - `cacheFile()`: Stores a processed file and registers its sources with the watcher
-  - `removeFile()`: Evicts cached files whose dependencies changed
-  - `staticMiddleware()`: Handles requests, hash redirects, conditional responses, and gzip
-  - `urlBuilder()`: View helper registered as `app.locals.electricity.url`
+- Exports the `static()` middleware, which owns option defaults, the watcher, cache warming, and HTTP handling
+- `staticMiddleware()` handles requests, hash redirects, conditional responses, and gzip, and registers `cache.url` as `app.locals.electricity.url`
 
-**Processor (`lib/processor.js`)**
-- `processor(directory, options, urlBuilder)` returns the synchronous function that turns a URL path into a file record (content, content length, content type, SHA1 hash, optional gzip, and dependency paths in watch mode)
-- Owns the Snockets instance; shared by the middleware and the warmup worker
-
-**URLs (`lib/urls.js`)**
-- `hashify()`, `parse()`, and `build()`: Stateless rules for adding, stripping, and building content-hashed URLs with an optional CDN hostname
+**Assets (`lib/assets.js`)**
+- `create(directory, options, onFile)` returns the cache that owns processing and its results, with `add()`, `fetch()`, `remove()`, and `url()`
+- `fetch()` processes a URL path into a file record (content, content length, content type, SHA1 hash, optional gzip, and dependency paths in watch mode) and memoizes it; CSS URL rewriting recurses through it to resolve sibling hashes
+- `add()` adopts a record processed elsewhere, `remove()` evicts entries whose dependencies changed, and `onFile` reports each newly cached file
+- `hashify()` and `parse()` are stateless rules for adding and stripping content hashes
+- Owns the Snockets instance; the middleware and the warmup worker each create their own cache
 
 **Warmup (`lib/warmup.js` and `lib/worker.js`)**
 - `warmup()` starts one worker thread running `worker.js`, which walks the public directory, processes every asset, and posts each file record back
@@ -90,9 +85,9 @@ chokidar and mime are ESM-only packages loaded through native `require(esm)`, so
 
 Tests use `node:test` and run every file in `test/` in its own process:
 - `test/index.js`: Middleware functionality, headers, hashing, Sass, Snockets, JSX, minification, gzip, error handling, and watch mode
-- `test/dependencies.js`: Watch invalidation of JavaScript and Sass dependency chains, fallbacks, and symlinks
+- `test/dependencies.js`: Watch invalidation of JavaScript and Sass dependency chains and fallbacks
 - `test/warmup.js`: Cache warming without watch mode, output parity with lazy processing, option validation, and failure handling
-- `test/watch-warmup.js`: Cache warming with watch mode, including edits during startup and external imports
+- `test/watch-warmup.js`: Cache warming with watch mode, including invalidation of warmed assets and external imports
 
 Shared test fixtures are in `test/public/` with subdirectories for different asset types. Warmup tests build their own fixtures in temporary directories.
 
