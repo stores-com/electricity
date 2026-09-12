@@ -13,6 +13,7 @@ const zlib = require('node:zlib');
 const chokidar = require('chokidar').default;
 
 const electricity = require('../lib');
+const warmup = require('../lib/warmup');
 
 function fixture(t, files) {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'electricity-warmup-'));
@@ -146,6 +147,27 @@ test('warmup populates the serving cache with compiled assets, hashes, binary da
         assert.equal(compressed.headers['content-length'], String(compressed.body.length));
         assert.equal(request(middleware, url('/large.txt')).body.toString(), text);
     });
+});
+
+test('worker messages arriving after a cache failure are ignored', async t => {
+    const worker = new events.EventEmitter();
+    worker.terminate = () => {};
+    t.mock.method(workerThreads, 'Worker', function() {
+        return worker;
+    });
+    const failure = new Error('Unable to cache');
+    const cached = [];
+    const pending = warmup('/assets', {}, urlPath => {
+        cached.push(urlPath);
+        throw failure;
+    });
+
+    worker.emit('message', { file: { content: Buffer.from('first') }, type: 'file', urlPath: '/first.txt' });
+    worker.emit('message', { file: { content: Buffer.from('second') }, type: 'file', urlPath: '/second.txt' });
+    worker.emit('exit', 0);
+
+    await assert.rejects(pending, error => error === failure);
+    assert.deepEqual(cached, ['/first.txt']);
 });
 
 test('opting out serves lazily without starting a worker', async t => {
