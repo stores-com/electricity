@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-09-11
+### Added
+- Cache warming. Static files are processed on a worker thread when the middleware is created so the first request is served from cache. Disable it with `warmup: false`.
+
+### Changed
+- Watch mode invalidates stylesheets when a Sass `@use` or `@forward` import changes.
+
+### Removed
+- The `sass-graph` dependency.
+
 ## [3.6.1] - 2025-01-21
 ### Changed
 - Use `module: false` option to uglify-js. Version 3.18.0+ assume ES6 modules.
