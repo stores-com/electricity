@@ -183,14 +183,19 @@ test('worker-warmed JavaScript parents and Sass @use parents invalidate on watch
     assert.equal(responseBody(middleware, '/styles/main.css'), '.example{color:#abcdef}');
 });
 
-test('an edit during startup discards stale remaining results without resurrecting deleted assets', { timeout: 15000 }, async t => {
+test('sources changed during startup are reported without resurrecting deleted assets', { timeout: 15000 }, async t => {
     const assets = fixture(t, {
         'public/dep.js': 'globalThis.version = "before";',
         'public/main.js': '//= require dep.js\nglobalThis.main = "pause startup";',
         'public/z-later.txt': 'not read until the paused compilation finishes'
     });
     const pause = pauseCompilation(assets);
-    const warnings = t.mock.method(console, 'warn', () => {});
+    const warned = Promise.withResolvers();
+    t.mock.method(console, 'warn', (...args) => {
+        if (/cache warming failed/i.test(args[0])) {
+            warned.resolve(args);
+        }
+    });
     const { middleware, warmed, watcher, ready } = assets.start(pause.options);
     await ready;
 
@@ -208,7 +213,8 @@ test('an edit during startup discards stale remaining results without resurrecti
         await warmed;
     }
 
-    assert.equal(warnings.mock.callCount(), 0);
+    const [, error] = await warned.promise;
+    assert.ok(error instanceof AggregateError);
     assert.match(responseBody(middleware, '/dep.js'), /version="after"/);
     assert.equal(responseBody(middleware, '/main.js'), undefined);
     assert.equal(responseBody(middleware, '/z-later.txt'), undefined);
