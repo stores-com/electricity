@@ -322,9 +322,10 @@ test('warmup skips Sass partials and preserves CSS precedence over matching Sass
     });
 });
 
-test('an individual compilation failure rejects warmup after other assets have been cached', async t => {
+test('compilation failures reject warmup after other assets have been cached', async t => {
     const { directory } = fixture(t, {
         'a-broken.scss': 'body { color: $undefined; }',
+        'b-broken.scss': 'body { color: $missing; }',
         'z-healthy.scss': 'body { color: green; }',
         'z-healthy.txt': 'still available'
     });
@@ -333,8 +334,10 @@ test('an individual compilation failure rejects warmup after other assets have b
 
     await assert.rejects(pending, error => {
         assert.ok(error instanceof AggregateError);
-        assert.equal(error.errors.length, 1);
-        assert.match(error.errors[0].message, /a-broken\.css/);
+        assert.equal(error.message, 'Unable to warm 2 assets.');
+        const messages = error.errors.map(err => err.message).sort();
+        assert.match(messages[0], /a-broken\.css/);
+        assert.match(messages[1], /b-broken\.css/);
         return true;
     });
     assert.equal(middleware.warmup(), pending);
@@ -352,7 +355,7 @@ test('warmup rejects when its root directory does not exist', async t => {
 
     await assert.rejects(pending, error => {
         assert.ok(error instanceof AggregateError);
-        assert.equal(error.errors.length, 1);
+        assert.equal(error.message, 'Unable to warm 1 asset.');
         assert.match(error.errors[0].message, /ENOENT|no such file/i);
         return true;
     });
