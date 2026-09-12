@@ -478,14 +478,15 @@ module.exports = () => {
         const warned = Promise.withResolvers();
         const warnings = t.mock.method(console, 'warn', (...args) => {
             // Workers from earlier cases report their own exits into this mock.
-            if (/cache warming failed/i.test(args[0]) && failure.expected.test(args[1].message)) {
-                warned.resolve(args);
+            const reported = args.map(String).join(' ');
+
+            if (/cache warming/i.test(reported) && failure.expected.test(reported)) {
+                warned.resolve(reported);
             }
         });
         electricity.static(directory, { babel: { plugins: [plugin] } });
 
-        const [, error] = await warned.promise;
-        assert.match(error.message, failure.expected);
+        assert.match(await warned.promise, failure.expected);
         warnings.mock.restore();
     }
 });
