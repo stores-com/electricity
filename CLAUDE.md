@@ -40,19 +40,24 @@ npx eslint lib/index.js
 ### Core Components
 
 **Main Module (`lib/index.js`)**
-- Exports the `static()` middleware, which owns option defaults, the watcher, cache warming, and HTTP handling
-- `staticMiddleware()` handles requests, hash redirects, conditional responses, and gzip, and registers `cache.url` as `app.locals.electricity.url`
+- Exports the `static()` middleware, which owns option defaults, the file cache, the watcher, the warmup worker, and HTTP handling
+- Key functions:
+  - `fetchFile()`: Returns a file from the cache, processing it when absent
+  - `cacheFile()`: Stores a file and registers its sources with the watcher
+  - `removeFile()`: Evicts cached files whose dependencies changed
+  - `urlBuilder()`: View helper registered as `app.locals.electricity.url`
+  - `staticMiddleware()`: Handles requests, hash redirects, conditional responses, and gzip
 
-**Assets (`lib/assets.js`)**
-- `create(directory, options, onFile)` returns the cache that owns processing and its results, with `add()`, `fetch()`, `remove()`, and `url()`
-- `fetch()` processes a URL path into a file record (content, content length, content type, SHA1 hash, optional gzip, and dependency paths in watch mode) and memoizes it; CSS URL rewriting recurses through it to resolve sibling hashes
-- `add()` adopts a record processed elsewhere, `remove()` evicts entries whose dependencies changed, and `onFile` reports each newly cached file
-- `hashify()` and `parse()` are stateless rules for adding and stripping content hashes
-- Owns the Snockets instance; the middleware and the warmup worker each create their own cache
+**Processor (`lib/processor.js`)**
+- The only code shared with the warmup worker, and it never touches a cache
+- `create(directory, options)` returns a function that processes a public URL path into a file record (content, content length, content type, SHA1 hash, optional gzip, and dependency paths in watch mode), and owns the Snockets instance
+- Stylesheet URL rewriting processes the referenced asset to resolve its hash
+- `hashify()`, `parse()`, and `url()` are stateless rules for adding, stripping, and applying content hashes and the CDN hostname
 
-**Warmup (`lib/worker.js`)**
-- `static()` starts one worker thread running `worker.js`, which walks the public directory, processes every asset, and posts each file record back for `cache.add()`
-- The worker posts `{ file, urlPath }` for each asset and `{ error }` for each failure; every failure is reported with `console.warn` and serving continues
+**Warmup Worker (`lib/worker.js`)**
+- `static()` starts one worker thread running `worker.js`, which walks the public directory and processes every asset
+- The worker knows nothing about the cache: it posts `{ file, urlPath }` for each asset and `{ error }` for each failure, and the middleware decides what to cache
+- Every failure is reported with `console.warn` and serving continues
 
 **File Processing Pipeline**
 1. Request comes in → middleware checks if it's a GET/HEAD request
