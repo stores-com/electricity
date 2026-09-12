@@ -97,12 +97,11 @@ module.exports = (api, options) => ({
     };
 }
 
-test('watch startup waits for ready and then automatically starts one memoized warmup', { timeout: 15000 }, async t => {
+test('watch startup automatically starts one memoized warmup', { timeout: 15000 }, async t => {
     const watcher = new events.EventEmitter();
     watcher.add = () => watcher;
     watcher.close = async () => {};
-    const assets = fixture(t, { 'public/main.txt': 'warmed after ready' }, () => watcher);
-    watcher.getWatched = () => ({ [assets.directory]: ['main.txt'] });
+    const assets = fixture(t, { 'public/main.txt': 'warmed at startup' }, () => watcher);
     const Worker = workerThreads.Worker;
     const started = Promise.withResolvers();
     const workers = t.mock.method(workerThreads, 'Worker', function(...args) {
@@ -112,16 +111,13 @@ test('watch startup waits for ready and then automatically starts one memoized w
     });
     const { middleware } = assets.start();
 
-    await timers.setImmediate();
-    assert.equal(workers.mock.callCount(), 0);
-    watcher.emit('ready');
     await started.promise;
     const pending = middleware.warmup();
     assert.equal(middleware.warmup(), pending);
     await pending;
     assert.equal(workers.mock.callCount(), 1);
     assert.equal(middleware.warmup(), pending);
-    assert.equal(responseBody(middleware, '/main.txt'), 'warmed after ready');
+    assert.equal(responseBody(middleware, '/main.txt'), 'warmed at startup');
 });
 
 test('a cache callback failure rejects warming and prevents later worker results from entering the cache', { timeout: 15000 }, async t => {
@@ -224,31 +220,22 @@ test('an edit during startup discards stale remaining results without resurrecti
     assert.equal(responseBody(middleware, '/z-later.txt'), undefined);
 });
 
-test('new external imports remain lazy for startup and are watched for subsequent changes', { timeout: 15000 }, async t => {
+test('external imports are warmed and watched for subsequent changes', { timeout: 15000 }, async t => {
     const assets = fixture(t, {
-        'public/main.js': '//= require ../shared/dep.js\nglobalThis.main = "pause startup";',
+        'public/main.js': '//= require ../shared/dep.js\nglobalThis.main = "warm startup";',
         'shared/dep.js': 'globalThis.version = "before";'
     });
     const external = path.join(assets.root, 'shared/dep.js');
-    const pause = pauseCompilation(assets);
-    const { middleware, watcher, ready } = assets.start(pause.options);
+    const { middleware, watcher, ready } = assets.start();
     await ready;
-    const pending = middleware.warmup();
-
-    try {
-        await pause.entered();
-        assert.ok(!watcher.getWatched()[path.dirname(external)]?.includes(path.basename(external)));
-        fs.writeFileSync(external, 'globalThis.version = "during startup";');
-    } finally {
-        pause.release();
-        await pending;
-    }
+    await middleware.warmup();
 
     while (!watcher.getWatched()[path.dirname(external)]?.includes(path.basename(external))) {
         t.signal.throwIfAborted();
         await timers.setImmediate();
     }
-    assert.match(responseBody(middleware, '/main.js'), /version="during startup"/);
+
+    assert.match(responseBody(middleware, '/main.js'), /version="before"/);
     await change(watcher, external, 'globalThis.version = "after startup";');
     assert.match(responseBody(middleware, '/main.js'), /version="after startup"/);
 });

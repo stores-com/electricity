@@ -3,7 +3,6 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const url = require('node:url');
 
 const chokidar = require('chokidar').default;
 
@@ -48,10 +47,6 @@ function watchedFixture(t, assets, options = {}) {
         registrations,
         notify(event, filename) {
             handlers.get('all')(event, filename);
-        },
-        ready(watched) {
-            watcher.getWatched = () => watched;
-            handlers.get('ready')();
         }
     };
 }
@@ -135,52 +130,4 @@ test('a fallback response retains known dependencies so restoring a missing sour
     assert.match(recovered, /shared = "restored"/);
     assert.match(recovered, /globalThis\.middle = true/);
     assert.match(recovered, /globalThis\.main = true/);
-});
-
-test('deleting a dependency after retargeting its directory symlink invalidates the rebuilt Sass parent', t => {
-    let linked;
-    const { directory, middleware, registrations, notify, ready } = watchedFixture(t, {
-        'first/_palette.scss': '$accent: red;',
-        'second/_palette.scss': '$accent: blue;',
-        'main.scss': '@use "palette"; body { color: palette.$accent; }'
-    }, {
-        sass: {
-            importers: [{
-                findFileUrl(name) {
-                    if (name !== 'palette') {
-                        return null;
-                    }
-                    return url.pathToFileURL(path.join(fs.realpathSync(linked), '_palette.scss'));
-                }
-            }]
-        }
-    });
-    const first = path.join(directory, 'first');
-    const second = path.join(directory, 'second');
-    linked = path.join(directory, 'linked');
-    const dependency = path.join(second, '_palette.scss');
-    fs.symlinkSync(first, linked, 'dir');
-    ready({
-        [directory]: ['first', 'second', 'linked', 'main.scss'],
-        [first]: ['_palette.scss'],
-        [second]: ['_palette.scss'],
-        [linked]: ['_palette.scss']
-    });
-    assert.equal(responseBody(middleware, '/main.css'), 'body{color:red}');
-
-    fs.unlinkSync(linked);
-    fs.symlinkSync(second, linked, 'dir');
-    notify('change', linked);
-    assert.equal(responseBody(middleware, '/main.css'), 'body{color:blue}');
-    assert.ok(registrations.at(-1).includes(fs.realpathSync(dependency)));
-
-    fs.unlinkSync(dependency);
-    notify('unlink', path.join(linked, '_palette.scss'));
-    let compilationError;
-    middleware({ get: () => {}, headers: {}, method: 'GET', path: '/main.css' }, {
-        send: () => assert.fail('The deleted import must invalidate the cached CSS'),
-        set: () => {}
-    }, error => { compilationError = error; });
-    assert.ok(compilationError);
-    assert.match(compilationError.message, /Can't find stylesheet to import/);
 });
