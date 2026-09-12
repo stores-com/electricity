@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Background cache warming using a worker thread, enabled by default. Disable automatic warming with `warmup: false`, or await completion with `middleware.warmup()`. Warming and watching are independent; watched changes stop cache updates from the startup pass, and subsequent requests rebuild lazily.
+- Background cache warming using a worker thread, enabled by default. Disable it with `warmup: false`. Warming and watching are independent; watched changes stop cache updates from the startup pass, and subsequent requests rebuild lazily. Failures are reported with `console.warn` and normal serving continues.
 
 ### Changed
 - Bump Electricity to 4.0.0 and require Node.js 24.11.0 or newer.

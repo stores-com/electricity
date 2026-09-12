@@ -31,6 +31,14 @@ function fixture(t, assets, watch = chokidar.watch) {
         ready = events.once(watcher, 'ready');
         return watcher;
     });
+
+    const Worker = workerThreads.Worker;
+    const exits = [];
+    t.mock.method(workerThreads, 'Worker', function(...args) {
+        const worker = new Worker(...args);
+        exits.push(events.once(worker, 'exit'));
+        return worker;
+    });
     t.after(async () => {
         await watcher?.close();
         fs.rmSync(root, { recursive: true, force: true });
@@ -45,7 +53,7 @@ function fixture(t, assets, watch = chokidar.watch) {
                 watch: { enabled: true },
                 ...options
             });
-            return { middleware, watcher, ready };
+            return { middleware, ready, warmed: Promise.all(exits), watcher, workerCount: () => exits.length };
         }
     };
 }
@@ -97,30 +105,19 @@ module.exports = (api, options) => ({
     };
 }
 
-test('watch startup automatically starts one memoized warmup', { timeout: 15000 }, async t => {
+test('watch startup automatically starts one warmup worker', { timeout: 15000 }, async t => {
     const watcher = new events.EventEmitter();
     watcher.add = () => watcher;
     watcher.close = async () => {};
     const assets = fixture(t, { 'public/main.txt': 'warmed at startup' }, () => watcher);
-    const Worker = workerThreads.Worker;
-    const started = Promise.withResolvers();
-    const workers = t.mock.method(workerThreads, 'Worker', function(...args) {
-        const worker = new Worker(...args);
-        started.resolve();
-        return worker;
-    });
-    const { middleware } = assets.start();
+    const { middleware, warmed, workerCount } = assets.start();
 
-    await started.promise;
-    const pending = middleware.warmup();
-    assert.equal(middleware.warmup(), pending);
-    await pending;
-    assert.equal(workers.mock.callCount(), 1);
-    assert.equal(middleware.warmup(), pending);
+    await warmed;
+    assert.equal(workerCount(), 1);
     assert.equal(responseBody(middleware, '/main.txt'), 'warmed at startup');
 });
 
-test('a cache callback failure rejects warming and prevents later worker results from entering the cache', { timeout: 15000 }, async t => {
+test('a cache callback failure is reported and keeps later worker results out of the cache', { timeout: 15000 }, async t => {
     const watcher = new events.EventEmitter();
     watcher.close = async () => {};
     const assets = fixture(t, {
@@ -128,7 +125,6 @@ test('a cache callback failure rejects warming and prevents later worker results
         'public/later.txt': 'later worker result',
         'shared/_palette.scss': '$accent: #123456;'
     }, () => watcher);
-    watcher.getWatched = () => ({ [assets.directory]: ['first.scss', 'later.txt'] });
     const failure = new Error('Watch registration failed');
     let shouldThrow = true;
     let registrations = 0;
@@ -137,19 +133,18 @@ test('a cache callback failure rejects warming and prevents later worker results
         if (shouldThrow) throw failure;
         return watcher;
     };
-    const stopped = Promise.withResolvers();
-    const Worker = workerThreads.Worker;
-    t.mock.method(workerThreads, 'Worker', function(...args) {
-        const worker = new Worker(...args);
-        worker.once('exit', () => stopped.resolve());
-        return worker;
+    const warned = Promise.withResolvers();
+    t.mock.method(console, 'warn', (...args) => {
+        if (/cache warming failed/i.test(args[0])) {
+            warned.resolve(args);
+        }
     });
-    const { middleware } = assets.start({ warmup: false });
-    watcher.emit('ready');
+    const { middleware, warmed } = assets.start();
 
-    await assert.rejects(middleware.warmup(), error => error === failure);
+    const [, error] = await warned.promise;
+    assert.equal(error, failure);
     shouldThrow = false;
-    await stopped.promise;
+    await warmed;
     assert.equal(registrations, 1, 'later worker messages do not invoke the cache callback');
     fs.writeFileSync(path.join(assets.directory, 'later.txt'), 'built lazily after failure');
     assert.equal(responseBody(middleware, '/later.txt'), 'built lazily after failure');
@@ -164,9 +159,9 @@ test('worker-warmed JavaScript parents and Sass @use parents invalidate on watch
         'public/styles/_palette.scss': '$accent: #123456;',
         'public/styles/main.scss': '@use "palette"; .example { color: palette.$accent; }'
     });
-    const { middleware, watcher, ready } = assets.start({ uglifyjs: { enabled: false } });
+    const { middleware, warmed, watcher, ready } = assets.start({ uglifyjs: { enabled: false } });
     await ready;
-    await middleware.warmup();
+    await warmed;
 
     const readFileSync = fs.readFileSync;
     const read = t.mock.method(fs, 'readFileSync', (filename, ...args) => {
@@ -196,9 +191,8 @@ test('an edit during startup discards stale remaining results without resurrecti
     });
     const pause = pauseCompilation(assets);
     const warnings = t.mock.method(console, 'warn', () => {});
-    const { middleware, watcher, ready } = assets.start(pause.options);
+    const { middleware, warmed, watcher, ready } = assets.start(pause.options);
     await ready;
-    const pending = middleware.warmup();
 
     try {
         await pause.entered();
@@ -211,7 +205,7 @@ test('an edit during startup discards stale remaining results without resurrecti
         }
     } finally {
         pause.release();
-        await pending;
+        await warmed;
     }
 
     assert.equal(warnings.mock.callCount(), 0);
@@ -226,9 +220,9 @@ test('external imports are warmed and watched for subsequent changes', { timeout
         'shared/dep.js': 'globalThis.version = "before";'
     });
     const external = path.join(assets.root, 'shared/dep.js');
-    const { middleware, watcher, ready } = assets.start();
+    const { middleware, warmed, watcher, ready } = assets.start();
     await ready;
-    await middleware.warmup();
+    await warmed;
 
     while (!watcher.getWatched()[path.dirname(external)]?.includes(path.basename(external))) {
         t.signal.throwIfAborted();
@@ -251,10 +245,10 @@ test('deleting a directory symlink invalidates its worker-warmed Sass parent', {
     const link = path.join(assets.directory, 'linked');
     fs.symlinkSync(path.join(assets.root, 'shared'), link, 'dir');
     watcher.getWatched = () => ({ [assets.directory]: ['linked', 'main.scss'], [link]: ['_palette.scss'] });
-    const { middleware, ready } = assets.start();
+    const { middleware, warmed, ready } = assets.start();
     watcher.emit('ready');
     await ready;
-    await middleware.warmup();
+    await warmed;
     const readFileSync = fs.readFileSync;
     const read = t.mock.method(fs, 'readFileSync', (filename, ...args) => {
         assert.ok(!String(filename).startsWith(assets.directory), `Unexpected asset read: ${filename}`);
