@@ -74,37 +74,6 @@ async function change(watcher, filename, source) {
     assert.equal(changedPath, filename);
 }
 
-function pauseCompilation(assets) {
-    const plugin = path.join(assets.root, 'pause-plugin.cjs');
-    fs.writeFileSync(plugin, `
-const workerThreads = require('node:worker_threads');
-module.exports = (api, options) => ({
-    visitor: {
-        StringLiteral(node) {
-            if (workerThreads.isMainThread || node.node.value !== 'pause startup') return;
-            const state = new Int32Array(options.signal);
-            Atomics.store(state, 0, 1);
-            Atomics.notify(state, 0);
-            Atomics.wait(state, 1, 0, 10000);
-        }
-    }
-});
-`);
-    const signal = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 2);
-    const state = new Int32Array(signal);
-    return {
-        options: { babel: { plugins: [[plugin, { signal }]] } },
-        async entered() {
-            await Atomics.waitAsync(state, 0, 0, 10000).value;
-            assert.equal(Atomics.load(state, 0), 1, 'the worker reached the paused compilation');
-        },
-        release() {
-            Atomics.store(state, 1, 1);
-            Atomics.notify(state, 1);
-        }
-    };
-}
-
 test('watch startup automatically starts one warmup worker', { timeout: 15000 }, async t => {
     const watcher = new events.EventEmitter();
     watcher.add = () => watcher;
@@ -181,43 +150,6 @@ test('worker-warmed JavaScript parents and Sass @use parents invalidate on watch
     assert.match(responseBody(middleware, '/second.js'), /shared = "after"/);
     await change(watcher, path.join(assets.directory, 'styles/_palette.scss'), '$accent: #abcdef;');
     assert.equal(responseBody(middleware, '/styles/main.css'), '.example{color:#abcdef}');
-});
-
-test('sources changed during startup are reported without resurrecting deleted assets', { timeout: 15000 }, async t => {
-    const assets = fixture(t, {
-        'public/dep.js': 'globalThis.version = "before";',
-        'public/main.js': '//= require dep.js\nglobalThis.main = "pause startup";',
-        'public/z-later.txt': 'not read until the paused compilation finishes'
-    });
-    const pause = pauseCompilation(assets);
-    const warned = Promise.withResolvers();
-    t.mock.method(console, 'warn', (...args) => {
-        if (/cache warming failed/i.test(args[0])) {
-            warned.resolve(args);
-        }
-    });
-    const { middleware, warmed, watcher, ready } = assets.start(pause.options);
-    await ready;
-
-    try {
-        await pause.entered();
-        await change(watcher, path.join(assets.directory, 'dep.js'), 'globalThis.version = "after";');
-        for (const name of ['main.js', 'z-later.txt']) {
-            const removed = events.once(watcher, 'unlink');
-            const deleted = path.join(assets.directory, name);
-            fs.unlinkSync(deleted);
-            assert.equal((await removed)[0], deleted);
-        }
-    } finally {
-        pause.release();
-        await warmed;
-    }
-
-    const [, error] = await warned.promise;
-    assert.ok(error instanceof AggregateError);
-    assert.match(responseBody(middleware, '/dep.js'), /version="after"/);
-    assert.equal(responseBody(middleware, '/main.js'), undefined);
-    assert.equal(responseBody(middleware, '/z-later.txt'), undefined);
 });
 
 test('external imports are warmed and watched for subsequent changes', { timeout: 15000 }, async t => {

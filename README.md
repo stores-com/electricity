@@ -60,7 +60,7 @@ app.use(electricity.static('public', {
 }));
 ```
 
-Warming and watching are independent. The watcher uses dependency paths from processed files to invalidate affected JavaScript and Sass bundles, including Sass `@use` and `@forward` imports, and it registers the dependencies of warmed assets the same way it registers those of requested assets. If a watched file changes during warming, remaining results from that pass are discarded so they cannot restore outdated cache entries. The worker finishes, and file errors from the abandoned pass are ignored. Changes after startup rebuild lazily on the next request. Warming runs once.
+Warming and watching are independent. The watcher uses dependency paths from processed files to invalidate affected JavaScript and Sass bundles, including Sass `@use` and `@forward` imports, and it registers the dependencies of warmed assets the same way it registers those of requested assets. Changes rebuild lazily on the next request. Warming runs once, and a source edited while the worker is reading it is picked up the next time it changes.
 
 The complete options object is copied into the worker using [structured cloning](https://nodejs.org/download/release/v24.11.0/docs/api/worker_threads.html#new-workerfilename-options). Use data that Node can copy, such as strings, numbers, arrays, plain data objects, and regular expressions. Functions cannot be copied, including inline Babel plugins, Sass importer callbacks, or methods on header values. Babel plugins can be specified by module path instead. Set `warmup: false` if your options require functions. Unsupported options end warming without changing normal lazy serving.
 

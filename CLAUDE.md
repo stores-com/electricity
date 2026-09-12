@@ -43,8 +43,8 @@ npx eslint lib/index.js
 - Exports `static()` middleware function that owns configuration, the in-memory file cache, file watching, cache warming, and HTTP handling
 - Key functions:
   - `fetchFile()`: Retrieves files from cache, processing them on demand
+  - `cacheFile()`: Stores a processed file and registers its sources with the watcher
   - `removeFile()`: Evicts cached files whose dependencies changed
-  - `warmFiles()`: Runs one warmup pass, discarding results after a watched edit
   - `staticMiddleware()`: Handles requests, hash redirects, conditional responses, and gzip
   - `urlBuilder()`: View helper registered as `app.locals.electricity.url`
 
