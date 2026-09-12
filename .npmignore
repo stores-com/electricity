@@ -1,5 +1,3 @@
 .eslint*
 .github
-.nyc_output
-.travis.yml
 test
