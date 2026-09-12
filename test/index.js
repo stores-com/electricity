@@ -26,13 +26,13 @@ test('electricity.static', { concurrency: true }, async (t) => {
     });
 
     t.test('should return a function', () => {
-        const middleware = electricity.static('test/public');
+        const middleware = electricity.static('test/public', { warmup: false });
         assert.strictEqual(typeof middleware, 'function');
     });
 
     t.test('should call next middleware when the specified file can not be found', async () => {
         await new Promise((resolve) => {
-            const middleware = electricity.static('test/public');
+            const middleware = electricity.static('test/public', { warmup: false });
 
             const req = {
                 method: 'GET',
@@ -50,7 +50,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
     t.test('should call next middleware when the specified URL is a directory', async () => {
         await new Promise((resolve) => {
-            const middleware = electricity.static('test/public');
+            const middleware = electricity.static('test/public', { warmup: false });
 
             const req = {
                 method: 'GET',
@@ -68,7 +68,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
     t.test('should call next middleware with an error if the specified URL is too long', async () => {
         await new Promise((resolve) => {
-            const middleware = electricity.static('test/public');
+            const middleware = electricity.static('test/public', { warmup: false });
 
             const req = {
                 method: 'GET',
@@ -90,7 +90,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
                 await new Promise((resolve) => {
                     const middleware = electricity.static('test/public', {
                         babel: {},
-                        uglifyjs: { enabled: false }
+                        uglifyjs: { enabled: false },
+                        warmup: false
                     });
 
                     const req = {
@@ -139,7 +140,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
                 t.test('should return file without transformation on an error', async () => {
                     await new Promise((resolve) => {
-                        const middleware = electricity.static('test/public');
+                        const middleware = electricity.static('test/public', { warmup: false });
 
                         const req = {
                             get: () => {},
@@ -171,7 +172,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
                 const middleware = electricity.static('test/public', {
                     uglifycss: {
                         enabled: false
-                    }
+                    },
+                    warmup: false
                 });
 
                 const req = {
@@ -210,7 +212,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
         t.test('should call next middleware with an error if the specified URL is too long', async () => {
             await new Promise((resolve) => {
-                const middleware = electricity.static('test/public');
+                const middleware = electricity.static('test/public', { warmup: false });
 
                 const req = {
                     method: 'GET',
@@ -231,7 +233,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
                 const middleware = electricity.static('test/public', {
                     uglifycss: {
                         enabled: false
-                    }
+                    },
+                    warmup: false
                 });
 
                 const req = {
@@ -274,7 +277,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
                     hostname: 'cdn.example.com',
                     uglifycss: {
                         enabled: false
-                    }
+                    },
+                    warmup: false
                 });
 
                 const req = {
@@ -313,7 +317,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
         t.test('should call next middleware when the specified file can not be found', async () => {
             await new Promise((resolve) => {
-                const middleware = electricity.static('test/public');
+                const middleware = electricity.static('test/public', { warmup: false });
 
                 const req = {
                     method: 'GET',
@@ -333,7 +337,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
     t.test('gzip', { concurrency: true }, async (t) => {
         t.test('should gzip TXT files for clients that accept gzip', async () => {
             await new Promise((resolve) => {
-                const middleware = electricity.static('test/public');
+                const middleware = electricity.static('test/public', { warmup: false });
 
                 const req = {
                     get: () => {},
@@ -359,7 +363,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
         t.test('should not gzip TXT files for clients that do not accept gzip', async () => {
             await new Promise((resolve) => {
-                const middleware = electricity.static('test/public');
+                const middleware = electricity.static('test/public', { warmup: false });
 
                 const req = {
                     get: () => {},
@@ -385,7 +389,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
         t.test('should not gzip PNG files', async () => {
             await new Promise((resolve) => {
-                const middleware = electricity.static('test/public');
+                const middleware = electricity.static('test/public', { warmup: false });
 
                 const req = {
                     get: () => {},
@@ -413,7 +417,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
                 const middleware = electricity.static('test/public', {
                     gzip: {
                         enabled: false
-                    }
+                    },
+                    warmup: false
                 });
 
                 const req = {
@@ -444,7 +449,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
     t.test('hashify', { concurrency: true }, async (t) => {
         t.test('should hashify by default', async () => {
             await new Promise((resolve) => {
-                const middleware = electricity.static('test/public');
+                const middleware = electricity.static('test/public', { warmup: false });
 
                 const req = {
                     method: 'GET',
@@ -483,7 +488,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
         t.test('should not hashify if disabled', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
-                    hashify: false
+                    hashify: false,
+                    warmup: false
                 });
 
                 const req = {
@@ -512,7 +518,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
         t.test('should not hashify if enabled', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
-                    hashify: true
+                    hashify: true,
+                    warmup: false
                 });
 
                 const req = {
@@ -534,7 +541,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
         t.test('should hashify files without extensions', async () => {
             await new Promise((resolve) => {
-                const middleware = electricity.static('test/public');
+                const middleware = electricity.static('test/public', { warmup: false });
 
                 const req = {
                     method: 'GET',
@@ -560,7 +567,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
                 const middleware = electricity.static('test/public', {
                     headers: {
                         'access-control-allow-origin': 'https://example.com'
-                    }
+                    },
+                    warmup: false
                 });
 
                 const req = {
@@ -584,7 +592,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
         t.test('should return a 304 for a valid if-none-match header', async () => {
             await new Promise((resolve) => {
-                const middleware = electricity.static('test/public');
+                const middleware = electricity.static('test/public', { warmup: false });
 
                 const req = {
                     get: (field) => {
@@ -610,7 +618,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
         t.test('should return etag header for invalid if-none-match header', async () => {
             await new Promise((resolve) => {
-                const middleware = electricity.static('test/public');
+                const middleware = electricity.static('test/public', { warmup: false });
 
                 const req = {
                     get: (field) => {
@@ -639,7 +647,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
     t.test('HTTP methods', { concurrency: true }, async (t) => {
         t.test('should handle HEAD requests', async () => {
             await new Promise((resolve) => {
-                const middleware = electricity.static('test/public');
+                const middleware = electricity.static('test/public', { warmup: false });
 
                 const req = {
                     get: () => {},
@@ -661,7 +669,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
         t.test('should not handle POST requests', async () => {
             await new Promise((resolve) => {
-                const middleware = electricity.static('test/public');
+                const middleware = electricity.static('test/public', { warmup: false });
 
                 const req = {
                     method: 'POST',
@@ -680,7 +688,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
     t.test('locals', { concurrency: true }, async (t) => {
         t.test('should register a helper function to generate URLs', async () => {
             await new Promise((resolve) => {
-                const middleware = electricity.static('test/public');
+                const middleware = electricity.static('test/public', { warmup: false });
 
                 const req = {
                     app: {
@@ -705,7 +713,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
         t.test('should return a hashified URL for a file that was previously requested', async () => {
             await new Promise((resolve) => {
-                const middleware = electricity.static('test/public');
+                const middleware = electricity.static('test/public', { warmup: false });
 
                 const req = {
                     app: {
@@ -731,7 +739,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
         t.test('should return original URL path when hashify is disabled', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
-                    hashify: false
+                    hashify: false,
+                    warmup: false
                 });
 
                 const req = {
@@ -757,7 +766,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
         t.test('should return original URL path when the file could not be found', async () => {
             await new Promise((resolve) => {
-                const middleware = electricity.static('test/public');
+                const middleware = electricity.static('test/public', { warmup: false });
 
                 const next = () => {
                     assert.strictEqual(req.app.locals.electricity.url('/not-found.txt'), '/not-found.txt');
@@ -780,7 +789,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
         t.test('should return an absolute URL when the hostname option is specified', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
-                    hostname: 'cdn.example.com'
+                    hostname: 'cdn.example.com',
+                    warmup: false
                 });
 
                 const req = {
@@ -812,7 +822,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
                     sass: {},
                     uglifycss: {
                         enabled: false
-                    }
+                    },
+                    warmup: false
                 });
 
                 const req = {
@@ -859,7 +870,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
                     },
                     uglifyjs: {
                         enabled: false
-                    }
+                    },
+                    warmup: false
                 });
 
                 const req = {
@@ -913,6 +925,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
                 await new Promise((resolve) => {
                     const middleware = electricity.static('test/public', {
                         uglifyjs: { enabled: false },
+                        warmup: false,
                         watch: { enabled: true }
                     });
 
@@ -939,7 +952,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
             t.test('should call next middleware with an error if the specified URL is too long', async () => {
                 await new Promise((resolve) => {
-                    const middleware = electricity.static('test/public');
+                    const middleware = electricity.static('test/public', { warmup: false });
 
                     const req = {
                         method: 'GET',
@@ -960,7 +973,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
     t.test('uglifycss', async (t) => {
         t.test('should uglify files', async () => {
             await new Promise((resolve) => {
-                const middleware = electricity.static('test/public');
+                const middleware = electricity.static('test/public', { warmup: false });
 
                 const req = {
                     method: 'GET',
@@ -1001,7 +1014,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
     t.test('uglifyjs', async (t) => {
         t.test('should uglify files', async () => {
             await new Promise((resolve) => {
-                const middleware = electricity.static('test/public');
+                const middleware = electricity.static('test/public', { warmup: false });
 
                 const req = {
                     method: 'GET',
@@ -1049,6 +1062,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
         t.test('should watch for file changes', { timeout: 3000 }, async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
+                    warmup: false,
                     watch: { enabled: true }
                 });
 
@@ -1125,6 +1139,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
                     uglifyjs: { enabled: false },
+                    warmup: false,
                     watch: { enabled: true }
                 });
 
@@ -1205,6 +1220,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
                     uglifyjs: { enabled: false },
+                    warmup: false,
                     watch: { enabled: true }
                 });
 
@@ -1263,6 +1279,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
                     uglifyjs: { enabled: false },
+                    warmup: false,
                     watch: { enabled: true }
                 });
 
