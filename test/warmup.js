@@ -99,7 +99,8 @@ function withoutReads(t, root, callback) {
     }
 }
 
-test('warmup', { concurrency: true }, async (t) => {
+// These tests mock Worker, console.warn, and fs.readFileSync, so they run one at a time
+test('warmup', async (t) => {
     t.test('should serve compiled assets without reading them again', async (t) => {
         const root = directory(t, {
             'images/pixel.png': Buffer.from([0, 255, 1, 128]),
@@ -128,7 +129,7 @@ test('warmup', { concurrency: true }, async (t) => {
         };
         const lazyRoot = directory(t, assets);
         const warmRoot = directory(t, assets);
-        const lazy = electricity.static(lazyRoot, { hostname: 'cdn.example.com' });
+        const lazy = electricity.static(lazyRoot, { hostname: 'cdn.example.com', warmup: false });
         const worker = warmup(t);
         const warmed = electricity.static(warmRoot, { hostname: 'cdn.example.com' });
 

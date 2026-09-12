@@ -1144,8 +1144,8 @@ test('electricity.static', { concurrency: true }, async (t) => {
                 });
 
                 fse.outputFile('test/public/watch/2.scss', 'p{color:red}', () => {
-                    fse.outputFile('test/public/watch/1.scss', '@import \'2\';', () => {
-                        fse.outputFile('test/public/watch/main.scss', '@import \'1\';', () => {
+                    fse.outputFile('test/public/watch/1.scss', '@use \'2\' as two;', () => {
+                        fse.outputFile('test/public/watch/main.scss', '@use \'1\' as one;', () => {
                             setTimeout(() => {
                                 const req = {
                                     method: 'GET',
