@@ -74,7 +74,7 @@ Which ultimately gets rendered as something like this:
 Electricity comes with a variety of features to help make your web pages fast without the need to setup a complicated build process.
 
 - **HTTP Headers:** Electricity sets proper `Cache-Control`, `ETag`, and `Expires`, headers to help avoid unnecessary HTTP requests on subsequent page views.
-- **Minification of JavaScript and CSS:** Electricity minifies JavaScript and CSS files in order to improve response time by reducing file sizes.
+- **Minification of JavaScript and CSS:** Electricity minifies JavaScript with UglifyJS, and Sass writes compressed CSS as it compiles `.scss` files, in order to improve response time by reducing file sizes. Plain `.css` files are served as written; rename one to `.scss` to have Sass minify it.
 - **Gzip:** Electricity gzips many content types (CSS, HTML, JavaScript, JSON, plaintext, XML) to reduce response sizes.
 - **Snockets:** Electricity supports Snockets (A JavaScript concatenation tool for Node.js inspired by Sprockets). You can use Snockets to combine multiple JavaScript files into a single JavaScript file which helps minimize HTTP requests.
 - **Sass:** Electricity supports Sass (Sassy CSS). Among other features, Sass can be used to combine multiple CSS files into a single CSS file which helps minimize HTTP requests. NOTE: We currently only support .scss files (not .sass files written in the older syntax).
@@ -93,12 +93,11 @@ const options = {
     hashify: true,
     headers: {},
     hostname: '',
-    sass: {},
+    sass: {
+        style: 'compressed'
+    },
     snockets: {},
     uglifyjs: {
-        enabled: true
-    },
-    uglifycss: {
         enabled: true
     },
     warmup: true,
@@ -125,17 +124,14 @@ var options = {
         'Access-Control-Allow-Origin': 'https://example.com'
     },
     hostname: 'cdn.example.com', // CDN hostname
-    sass: { // Object passed straight to node-sass options
-        outputStyle: 'compressed',
-        quietDeps: true
+    sass: { // Object passed straight to Sass compile options: https://sass-lang.com/documentation/js-api/interfaces/options/
+        quietDeps: true,
+        style: 'expanded' // Do not minify CSS
     },
     snockets: { // Object passed straight to snockets options: https://www.npmjs.com/package/snockets
     },
     uglifyjs: { // Object passed straight to uglify-js options: https://github.com/mishoo/UglifyJS#minify-options
         enabled: false // Do not minify Javascript
-    },
-    uglifycss: { // Object passed straight to uglifycss options: https://github.com/fmarcia/uglifycss
-        enabled: false // Do not minify CSS
     },
     warmup: false // Process files only when they are requested
 };

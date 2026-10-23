@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- Sass writes compressed CSS by default (`sass: { style: 'compressed' }`). Set `sass: { style: 'expanded' }` to serve unminified CSS.
+
+### Removed
+- UglifyCSS and the `uglifycss` option. Sass minifies `.scss` files as it compiles them, which is much faster on large stylesheets (one 600 KB stylesheet took 16 seconds in UglifyCSS and 0.1 seconds in Sass) and leaves `@supports (...) or (...)` conditions intact (UglifyCSS removed the space in `or (`, which browsers reject). `.css` files are now served as written; rename one to `.scss` to have Sass minify it. To upgrade, delete any `uglifycss` option you pass, and replace `uglifycss: { enabled: false }` with `sass: { style: 'expanded' }`.
 
 ## [4.0.0] - 2026-09-11
 ### Added
