@@ -169,12 +169,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
     t.test('css', { concurrency: true }, async (t) => {
         t.test('should read .css files direcly from disk', async () => {
             await new Promise((resolve) => {
-                const middleware = electricity.static('test/public', {
-                    uglifycss: {
-                        enabled: false
-                    },
-                    warmup: false
-                });
+                const middleware = electricity.static('test/public', { warmup: false });
 
                 const req = {
                     method: 'GET',
@@ -230,12 +225,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
         t.test('should update URLs', async () => {
             await new Promise((resolve) => {
-                const middleware = electricity.static('test/public', {
-                    uglifycss: {
-                        enabled: false
-                    },
-                    warmup: false
-                });
+                const middleware = electricity.static('test/public', { warmup: false });
 
                 const req = {
                     method: 'GET',
@@ -275,9 +265,6 @@ test('electricity.static', { concurrency: true }, async (t) => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
                     hostname: 'cdn.example.com',
-                    uglifycss: {
-                        enabled: false
-                    },
                     warmup: false
                 });
 
@@ -816,12 +803,49 @@ test('electricity.static', { concurrency: true }, async (t) => {
     });
 
     t.test('sass', async (t) => {
-        t.test('should read .scss files', async () => {
+        t.test('should compile .scss files to compressed CSS', async () => {
+            await new Promise((resolve) => {
+                const middleware = electricity.static('test/public', { warmup: false });
+
+                const req = {
+                    method: 'GET',
+                    path: '/styles/sass/sass.css'
+                };
+
+                const res = {
+                    redirect: (path) => {
+                        assert.strictEqual(path, '/styles/sass/sass-d6dbf05cdcccb0b4a6b0ae6b580f4a40a2782455.css');
+
+                        const req = {
+                            get: () => {},
+                            method: 'GET',
+                            path
+                        };
+
+                        const res = {
+                            send: (body) => {
+                                fs.readFile('test/public/styles/sass/sass-expected.css', (err, expected) => {
+                                    assert.strictEqual(body, expected.toString());
+                                    resolve();
+                                });
+                            },
+                            set: () => {}
+                        };
+
+                        middleware(req, res);
+                    },
+                    set: () => {}
+                };
+
+                middleware(req, res);
+            });
+        });
+
+        t.test('should use the specified Sass output style', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', {
-                    sass: {},
-                    uglifycss: {
-                        enabled: false
+                    sass: {
+                        style: 'expanded'
                     },
                     warmup: false
                 });
@@ -843,7 +867,7 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
                         const res = {
                             send: (body) => {
-                                fs.readFile('test/public/styles/sass/sass-expected.css', (err, expected) => {
+                                fs.readFile('test/public/styles/sass/sass-expanded-expected.css', (err, expected) => {
                                     assert.strictEqual(body, expected.toString());
                                     resolve();
                                 });
@@ -966,47 +990,6 @@ test('electricity.static', { concurrency: true }, async (t) => {
 
                     middleware(req, null, next);
                 });
-            });
-        });
-    });
-
-    t.test('uglifycss', async (t) => {
-        t.test('should uglify files', async () => {
-            await new Promise((resolve) => {
-                const middleware = electricity.static('test/public', { warmup: false });
-
-                const req = {
-                    method: 'GET',
-                    path: '/styles/uglifycss/test.css'
-                };
-
-                const res = {
-                    redirect: (path) => {
-                        assert.strictEqual(path, '/styles/uglifycss/test-c08394f9bdad595e2e3a7c5e7851b41bd153204f.css');
-
-                        const req = {
-                            get: () => {},
-                            method: 'GET',
-                            path
-                        };
-
-                        const res = {
-                            send: (body) => {
-                                fs.readFile('test/public/styles/uglifycss/test-expected.css', (err, expected) => {
-                                    assert.ifError(err);
-                                    assert.strictEqual(body, expected.toString());
-                                    resolve();
-                                });
-                            },
-                            set: () => {}
-                        };
-
-                        middleware(req, res);
-                    },
-                    set: () => {}
-                };
-
-                middleware(req, res);
             });
         });
     });

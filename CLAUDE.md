@@ -63,10 +63,10 @@ npx eslint lib/index.js
 2. URL is parsed, hash stripped if present
 3. File is fetched from cache, or processed from disk by `lib/processor.js`
 4. Transformations applied based on file type:
-   - `.scss` → Sass compilation → CSS minification
+   - `.scss` → Sass compilation (compressed output by default) → URL rewriting for assets
    - `.js` with JSX → Babel transformation → UglifyJS
    - `.js` with Snockets → Dependency concatenation → minification
-   - CSS files → URL rewriting for assets → minification
+   - `.css` files → URL rewriting for assets (served as written, not minified)
 5. Content is gzipped if applicable
 6. Response sent with appropriate headers (Cache-Control, ETag, etc.)
 
@@ -75,10 +75,9 @@ Creating the middleware runs the same processing on a worker thread, so requests
 ### Dependencies and Their Roles
 
 - **@babel/core**: Transforms JSX files for React support
-- **sass**: Compiles SCSS files to CSS and reports the files it loaded, used for cache invalidation
+- **sass**: Compiles SCSS files to compressed CSS and reports the files it loaded, used for cache invalidation
 - **snockets**: JavaScript concatenation via require directives, and the dependency chain used for cache invalidation
 - **uglify-js**: JavaScript minification
-- **uglifycss**: CSS minification
 - **chokidar**: File watching for development mode
 - **mime**: Content-type detection
 - **negotiator**: Content negotiation for gzip support
@@ -108,10 +107,9 @@ The middleware accepts these options:
 - `hashify`: Enable/disable URL hashing (default: true)
 - `headers`: Additional HTTP headers
 - `hostname`: CDN hostname for URL generation
-- `sass`: Sass compilation options
+- `sass`: Sass compilation options (`style` defaults to `'compressed'`)
 - `snockets`: Snockets concatenation options
 - `uglifyjs`: UglifyJS minification options (enabled by default)
-- `uglifycss`: UglifyCSS minification options (enabled by default)
 - `warmup`: Enable/disable cache warming on a worker thread (default: true)
 - `watch.enabled`: Enable file watching for development
 
