@@ -302,6 +302,44 @@ test('electricity.static', { concurrency: true }, async (t) => {
             });
         });
 
+        t.test('should leave quoted data URIs that contain parentheses whole', async () => {
+            await new Promise((resolve) => {
+                const middleware = electricity.static('test/public', { warmup: false });
+
+                const req = {
+                    method: 'GET',
+                    path: '/styles/urls/data-uri.css'
+                };
+
+                const res = {
+                    redirect: (path) => {
+                        assert.strictEqual(path, '/styles/urls/data-uri-911542ec08e9bc2aeb486956225387a6fb500e02.css');
+
+                        const req = {
+                            get: () => {},
+                            method: 'GET',
+                            path
+                        };
+
+                        const res = {
+                            send: (body) => {
+                                fs.readFile('test/public/styles/urls/data-uri-expected.css', (err, expected) => {
+                                    assert.strictEqual(body, expected.toString());
+                                    resolve();
+                                });
+                            },
+                            set: () => {}
+                        };
+
+                        middleware(req, res);
+                    },
+                    set: () => {}
+                };
+
+                middleware(req, res);
+            });
+        });
+
         t.test('should call next middleware when the specified file can not be found', async () => {
             await new Promise((resolve) => {
                 const middleware = electricity.static('test/public', { warmup: false });
