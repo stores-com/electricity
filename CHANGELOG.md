@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.1.1] - 2026-10-23
+### Fixed
+- Quoted CSS URLs that contain `)`, such as SVG data URIs with `rgba(...)` inside, keep their quotes. Electricity cut them short at the first `)` and wrote them back without the opening quote, and with 4.1.0's compressed single-line output the leftover quote hid every rule after it. A URL that doesn't match a file is now left exactly as written.
+
 ## [4.1.0] - 2026-10-23
 ### Changed
 - Sass writes compressed CSS by default (`sass: { style: 'compressed' }`). Set `sass: { style: 'expanded' }` to serve unminified CSS.
