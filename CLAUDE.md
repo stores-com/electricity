@@ -119,7 +119,7 @@ The options are copied to the warmup worker with structured cloning, so they mus
 
 Located in `eslint.config.js`:
 - Uses flat config format (ESLint 9+)
-- ECMAScript 2020 with JSX support
+- Extends `js.configs.recommended` with no `ecmaVersion` or JSX parser options
 - Node.js globals
 - Key rules: single quotes, semicolons required, no trailing spaces
 - Ignores: `coverage/` and `test/public/`
